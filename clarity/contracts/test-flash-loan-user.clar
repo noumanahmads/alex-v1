@@ -1,11 +1,8 @@
 (impl-trait .trait-flash-loan-user-mod.flash-loan-user-trait-mod)
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
-(use-trait vault-trait .trait-vault-flat.vault-trait-flat)
 
 (define-constant insufficient-flash-loan-balance-err (err u528))
 (define-constant invalid-post-loan-balance-err (err u515))
-(define-constant user-execute-err (err u101))
-(define-constant transfer-one-by-one-err (err u102))
 (define-constant transfer-failed-err (err u72))
 (define-public (execute 
                     (token1 <ft-trait>) 
@@ -27,10 +24,10 @@
         ;; once you are done, return the loan
         (asserts! (is-ok (contract-call? token1 transfer amount1 (as-contract tx-sender) the-vault none)) transfer-failed-err)  
         (asserts! (is-ok (contract-call? token2 transfer amount2 (as-contract tx-sender) the-vault none)) transfer-failed-err)  
-        ;; (asserts! (is-ok (contract-call? (unwrap-panic token3) transfer (unwrap-panic amount3) (as-contract tx-sender) the-vault none)) transfer-failed-err)  
-        ;; do the same for token2 and token3
-
+        ;; (match token3
+        ;;     (contract-call? token3 transfer amount3 (as-contract tx-sender) the-vault none)
+        ;;     err transfer-failed-err
+        ;; )
         (ok true)
-         
     )
 )
