@@ -1,6 +1,6 @@
 (impl-trait .trait-flash-loan-user-mod.flash-loan-user-trait-mod)
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
-
+(use-trait vault-trait .trait-vault.vault-trait)
 (define-constant insufficient-flash-loan-balance-err (err u528))
 (define-constant transfer-failed-err (err u72))
 
@@ -14,6 +14,7 @@
                 (amount1 uint)
                 (amount2 uint)
                 (amount3 (optional uint))
+                (the-valut <vault-trait>))
                )
     (begin 
         ;; TODO: make sure the token and amount are provided in pairs

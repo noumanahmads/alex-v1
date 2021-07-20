@@ -35,7 +35,7 @@ depends_on = ["trait-sip-010", "trait-pool-token"]
 
 [contracts.test-flash-loan-user]
 path = "contracts/test-flash-loan-user.clar"
-depends_on = []
+depends_on = ['trait-vault','trait-flash-loan-user-mod']
 
 [contracts.token-alex]
 path = "contracts/token-alex.clar"
@@ -55,7 +55,7 @@ depends_on = ["trait-sip-010"]
 
 [contracts.trait-flash-loan-user-mod]
 path = "contracts/trait-flash-loan-user-mod.clar"
-depends_on = ["trait-sip-010"]
+depends_on = ["trait-sip-010",'trait-vault']
 
 [contracts.trait-oracle]
 path = "contracts/trait-oracle.clar"

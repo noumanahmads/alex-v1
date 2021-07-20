@@ -1,6 +1,6 @@
-(impl-trait .flash-loan-user-trait-mod)
+(impl-trait .trait-flash-loan-user-mod.flash-loan-user-trait-mod)
 
-(use-trait vault-trait .trait-vault.vault-trait)
+(use-trait vault-trait .trait-vault-flat.vault-trait-flat)
 
 ;; test-flash-loan-user
 ;; <add a description here>
@@ -16,7 +16,14 @@
 
 ;; public functions
 ;;
-(define-public (execute (token1 <ft-trait>) (token2 <ft-trait>) (token3 (optional <ft-trait>)) (amount1 uint) (amount2 uint) (amount3 (optional uint) (the-vault <vault-trait>)))
+(define-public (execute 
+                    (token1 <ft-trait>) 
+                    (token2 <ft-trait>) 
+                    (token3 (optional <ft-trait>)) 
+                    (amount1 uint) 
+                    (amount2 uint) 
+                    (amount3 (optional uint)) 
+                    (the-vault <vault-trait>)))
     (let 
         (
             (weight1 u50000000)
