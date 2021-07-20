@@ -24,7 +24,15 @@ class FWPTestAgent1 {
     ], this.deployer.address);
   }
 
-  createPool(user: Account, tokenX: string, tokenY: string, weightX: number, weightY: number, pooltoken: string, vault: string, balanceX: number, balanceY: number) {
+  createPool(user: Account, 
+             tokenX: string, 
+             tokenY: string, 
+             weightX: number, 
+             weightY: number, 
+             pooltoken: string, 
+             vault: string, 
+             balanceX: number, 
+             balanceY: number) {
     let block = this.chain.mineBlock([
       Tx.contractCall("fixed-weight-pool", "create-pool", [
         types.principal(tokenX),

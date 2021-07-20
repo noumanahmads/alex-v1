@@ -91,7 +91,16 @@
 )
 
 ;; TODO: shouldn't the pool token be created as part of create-pool?
-(define-public (create-pool (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (the-pool-token <pool-token-trait>) (the-vault <vault-trait>) (dx uint) (dy uint)) 
+(define-public (create-pool 
+                        (token-x-trait <ft-trait>) 
+                        (token-y-trait <ft-trait>) 
+                        (weight-x uint) 
+                        (weight-y uint) 
+                        (the-pool-token <pool-token-trait>) 
+                        (the-vault <vault-trait>) 
+                        (dx uint) 
+                        (dy uint)
+                ) 
     (let
         (
             (token-x (contract-of token-x-trait))
