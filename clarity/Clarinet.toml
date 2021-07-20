@@ -13,10 +13,6 @@ depends_on = ["trait-sip-010", "trait-yield-token", "trait-vault", "math-fixed-p
 path = "contracts/fixed-weight-pool.clar"
 depends_on = ["trait-sip-010", "trait-pool-token", "trait-vault", "math-fixed-point", "weighted-equation"]
 
-[contracts.flash-loan-v1]
-path = "contracts/flash-loan-v1.clar"
-depends_on = ["trait-sip-010", "trait-flash-loan-user-mod"]
-
 [contracts.math-fixed-point]
 path = "contracts/math-fixed-point.clar"
 depends_on = ["math-log-exp"]
