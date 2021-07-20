@@ -41,18 +41,20 @@
                 (amount3 (optional uint)))
   (begin
   ;; TODO: step 0 validate input parameters
-  (asserts! (and (is-none token3) (is-none token3)) transfer-one-by-one-err)
+    (asserts! (and (is-none token3) (is-none token3)) transfer-one-by-one-err)
   ;; TODO: step 1 transfer tokens to user one by one
     (asserts! (is-ok (transfer-to-user flash-loan-user token1 amount1)) transfer-one-by-one-err)  
     (asserts! (is-ok (transfer-to-user flash-loan-user token2 amount2)) transfer-one-by-one-err)
     (asserts! (is-ok (transfer-to-user flash-loan-user (unwrap-panic token3) (unwrap-panic amount3))) transfer-one-by-one-err)
   ;; TODO: step 2 call user.execute
-    (asserts! (is-ok (contract-call? flash-loan-user execute token1 token2 token3 amount1 amount2 amount3 tx-sender)) user-execute-err)
+    (asserts! (is-ok (contract-call? .test-flash-loan-user execute token1 token2 token3 amount1 amount2 amount3 tx-sender)) user-execute-err)
   ;; TODO: step 3 pay back tokens to vault
 
     (ok true)
   )
 )
+
+
 (define-private (transfer-to-user 
                   (flash-loan-user <flash-loan-user-trait-mod>) 
                   (token <ft-trait>)
@@ -69,6 +71,8 @@
     (ok true)
   )
 )
+
+
 (define-private (calculateFlashLoanFeeAmount (amount uint))
 ;;TODO: need to implement Flash loan fee amount, now just leave it 1%
     (/ amount u100)

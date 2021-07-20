@@ -20,7 +20,7 @@
         ;; TODO: make sure the token and amount are provided in pairs
         (ok true)           
     )   
-)
+
 
 (define-public (flash-loan-one 
                     (token <ft-trait>) 
