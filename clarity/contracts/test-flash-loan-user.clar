@@ -26,6 +26,8 @@
 
         ;; once you are done, return the loan
         (asserts! (is-ok (contract-call? token1 transfer amount1 (as-contract tx-sender) the-vault none)) transfer-failed-err)  
+        (asserts! (is-ok (contract-call? token2 transfer amount2 (as-contract tx-sender) the-vault none)) transfer-failed-err)  
+        ;; (asserts! (is-ok (contract-call? (unwrap-panic token3) transfer (unwrap-panic amount3) (as-contract tx-sender) the-vault none)) transfer-failed-err)  
         ;; do the same for token2 and token3
 
         (ok true)

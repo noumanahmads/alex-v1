@@ -14,6 +14,7 @@
 
 (define-data-var pre-loan-balance uint u0)
 (define-data-var post-loan-balance uint u0)
+(define-data-var pre-loan-balances (list 3 uint) (list))
 (define-data-var fee-amount uint u0)
 
 (define-read-only (get-balance (token <ft-trait>))
@@ -43,10 +44,19 @@
     (asserts! (is-ok (transfer-to-user flash-loan-user token1 amount1)) transfer-one-by-one-err)  
     (asserts! (is-ok (transfer-to-user flash-loan-user token2 amount2)) transfer-one-by-one-err)
     (asserts! (is-ok (transfer-to-user flash-loan-user (unwrap-panic token3) (unwrap-panic amount3))) transfer-one-by-one-err)
-  ;; TODO: step 2 call user.execute
+  ;; TODO: step 2 call user.execute. the one could do anything then pay the tokens back ,see test-flash-loan-user
     (asserts! (is-ok (contract-call? .test-flash-loan-user execute token1 token2 token3 amount1 amount2 amount3 tx-sender)) user-execute-err)
-  ;; TODO: step 3 pay back tokens to vault
-
+  ;; TODO: step 3 check if the balance is incorrect
+    (var-set post-loan-balance (unwrap-panic (contract-call? token1 get-balance tx-sender)))
+    (var-set pre-loan-balance (unwrap-panic (element-at (var-get pre-loan-balances) u0)))
+    (asserts! (>= (var-get post-loan-balance) (var-get pre-loan-balance)) invalid-post-loan-balance-err)
+    (var-set post-loan-balance (unwrap-panic (contract-call? token2 get-balance tx-sender)))
+    (var-set pre-loan-balance (unwrap-panic (element-at (var-get pre-loan-balances) u1)))
+    (asserts! (>= (var-get post-loan-balance) (var-get pre-loan-balance)) invalid-post-loan-balance-err)
+    ;; TODO: having trouble on unwrap-panic token3
+    ;; (var-set post-loan-balance (unwrap-panic (contract-call? (unwrap-panic token3) get-balance tx-sender)))
+    ;; (var-set pre-loan-balance (unwrap-panic (element-at (var-get pre-loan-balances) u2)))
+    ;; (asserts! (>= (var-get post-loan-balance) (var-get pre-loan-balance)) invalid-post-loan-balance-err)
     (ok true)
   )
 )
@@ -59,9 +69,10 @@
                   )
   (begin
     (var-set pre-loan-balance (unwrap-panic (contract-call? token get-balance tx-sender)))
-    (var-set fee-amount (calculateFlashLoanFeeAmount amount))
+    ;; TODO: calculate this fee later
+    ;; (var-set fee-amount (calculateFlashLoanFeeAmount amount))
     (print (var-get pre-loan-balance))
-    (print (var-get fee-amount))
+    (append (var-get pre-loan-balances) (var-get pre-loan-balance))
     ;;Make sure the token have enough balance to lend
     (asserts! (>= (var-get pre-loan-balance) amount) insufficient-flash-loan-balance-err)
     (asserts! (is-ok (contract-call? token transfer amount (as-contract tx-sender) (contract-of flash-loan-user) none)) transfer-failed-err)  
