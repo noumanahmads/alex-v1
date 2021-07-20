@@ -3,6 +3,6 @@
 
 (define-trait flash-loan-user-trait-mod
   (
-    (execute (<ft-trait> <ft-trait> (optional <ft-trait>) uint uint (optional uint) <vault-trait>) (response bool uint))
+    (execute (<ft-trait> <ft-trait> (optional <ft-trait>) uint uint (optional uint) principal) (response bool uint))
   )
 )

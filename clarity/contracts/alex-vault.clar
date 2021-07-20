@@ -16,13 +16,10 @@
 (define-data-var post-loan-balance uint u0)
 (define-data-var fee-amount uint u0)
 
-
-;; returns the balance of token
 (define-read-only (get-balance (token <ft-trait>))
   ;;use https://docs.stacks.co/references/language-functions#ft-get-balance
   (ok u0)
 )
-
 ;; returns list of {token, balance}
 (define-read-only (get-balances)
   ;;Clarity doesn't support loop, so we need to maintain a list of tokens to apply map to get-balance

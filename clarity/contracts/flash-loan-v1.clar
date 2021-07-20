@@ -14,8 +14,7 @@
                 (amount1 uint)
                 (amount2 uint)
                 (amount3 (optional uint))
-                (the-valut <vault-trait>))
-               )
+                (the-valut principal))
     (begin 
         ;; TODO: make sure the token and amount are provided in pairs
         (ok true)           
