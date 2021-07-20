@@ -33,6 +33,10 @@ depends_on = ["trait-oracle"]
 path = "contracts/pool-token-alex-usda.clar"
 depends_on = ["trait-sip-010", "trait-pool-token"]
 
+[contracts.test-flash-loan-user]
+path = "contracts/test-flash-loan-user.clar"
+depends_on = []
+
 [contracts.token-alex]
 path = "contracts/token-alex.clar"
 depends_on = ["trait-sip-010", "trait-alex-token"]
