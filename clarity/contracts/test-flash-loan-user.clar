@@ -1,9 +1,8 @@
 (impl-trait .trait-flash-loan-user.flash-loan-user-trait)
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
-
-(define-constant insufficient-flash-loan-balance-err (err u528))
-(define-constant invalid-post-loan-balance-err (err u515))
 (define-constant transfer-failed-err (err u72))
+(define-map names-map { name: (string-ascii 12)} { id: int })
+(map-set names-map { name: "blockstack" } { id: 1337 })
 (define-public (execute 
                     (token1 <ft-trait>) 
                     (token2 <ft-trait>) 
@@ -19,7 +18,7 @@
         )
 
         ;; do whatever you want to do with the loan you have
-        ;; TODO: something is wrong on calling this swap-x-for-y I will just comment it by now.
+        ;; TODO: something is wrong on calling this swap-x-for-y , So I just commentted it by now.
         ;; (asserts! (is-ok (contract-call? fixed-weight-pool swap-x-for-y token1 token2 weight1 weight2 the-vault amount1)))
 
         ;; once you are done, return the loan
@@ -32,3 +31,12 @@
         (ok true)
     )
 )
+(define-public (test (msg (optional (string-utf8 32)))) 
+    (begin 
+        (print msg) 
+        (ok true)
+    )
+)
+
+
+
