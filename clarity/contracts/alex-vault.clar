@@ -1,9 +1,9 @@
-(impl-trait .trait-vault-flat.vault-trait-flat)
+(impl-trait .trait-vault.vault-trait)
 
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
 ;; (use-trait flash-loan-user-trait .trait-flash-loan-user.flash-loan-user-trait)
 ;; I haven't change all the trait yet cause trait-flash-loan-user has been refered in a lot files
-(use-trait flash-loan-user-trait-mod .trait-flash-loan-user-mod.flash-loan-user-trait-mod)
+(use-trait flash-loan-user-trait .trait-flash-loan-user.flash-loan-user-trait)
 
 (define-constant insufficient-flash-loan-balance-err (err u528))
 (define-constant invalid-post-loan-balance-err (err u515))
@@ -29,8 +29,8 @@
 )
 
 ;; flash loan version with flat paramters
-(define-public (flash-loan-flat 
-                (flash-loan-user <flash-loan-user-trait-mod>) 
+(define-public (flash-loan 
+                (flash-loan-user <flash-loan-user-trait>) 
                 (token1 <ft-trait>)
                 (token2 <ft-trait>)
                 (token3  (optional <ft-trait>)) 
@@ -66,7 +66,7 @@
 )
 
 (define-private (transfer-to-user 
-                  (flash-loan-user <flash-loan-user-trait-mod>) 
+                  (flash-loan-user <flash-loan-user-trait>) 
                   (token <ft-trait>)
                   (amount uint)
                   )

@@ -1,4 +1,4 @@
-(impl-trait .trait-flash-loan-user-mod.flash-loan-user-trait-mod)
+(impl-trait .trait-flash-loan-user.flash-loan-user-trait)
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
 
 (define-constant insufficient-flash-loan-balance-err (err u528))
@@ -19,6 +19,7 @@
         )
 
         ;; do whatever you want to do with the loan you have
+        ;; TODO: something is wrong on calling this swap-x-for-y I will just comment it by now.
         ;; (asserts! (is-ok (contract-call? fixed-weight-pool swap-x-for-y token1 token2 weight1 weight2 the-vault amount1)))
 
         ;; once you are done, return the loan
