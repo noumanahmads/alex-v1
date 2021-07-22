@@ -1,3 +1,5 @@
+
+
 (define-trait yield-token-trait
   (
     ;; sip-010
@@ -26,10 +28,10 @@
     ;; additional functions
 
     ;; mint(principal uint):bool
-    (mint (principal uint) (response bool uint))
+    (mint (uint principal) (response bool uint))
     
     ;; burn(principal uint):bool
-    (burn (principal uint) (response bool uint))
+    (burn (uint principal) (response bool uint))
 
     ;; the underlying token
     (get-token () (response principal uint))

@@ -7,60 +7,98 @@ import {
   } from './models/alex-tests-fixed-weight-pool.ts';
   
 
-const gAlexTokenAddress = "STSTW15D618BSZQB85R058DS46THH86YQQY6XCB7.token-alex"
-const usdaTokenAddress = "STSTW15D618BSZQB85R058DS46THH86YQQY6XCB7.token-usda"
-const gAlexUsdaPoolAddress = "STSTW15D618BSZQB85R058DS46THH86YQQY6XCB7.pool-token-alex-usda"
-const alexVaultAddress = "STSTW15D618BSZQB85R058DS46THH86YQQY6XCB7.alex-vault"
+// Deployer Address Constants 
+const gAlexTokenAddress = "ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE.token-alex"
+const usdaTokenAddress = "ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE.token-usda"
+const gAlexUsdaPoolAddress = "ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE.pool-token-alex-usda"
+const alexVaultAddress = "ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE.alex-vault"
+const Wallet1VaultAddress = "ST1J4G6RR643BCG8G8SR6M2D9Z9KXT2NJDRK3FBTK.alex-vault"
 
-const testWeightX = 0.5
-const testWeightY = 0.5
+const testWeightX = 50000000 //0.5
+const testWeightY = 50000000 //0.5
+
+/**
+ * Fixed Weight Pool Test Cases  
+ * 
+ * 1. Create Pool, Add values to the pool and reduce values.
+ * 
+ * 2. Conduct Swapping 
+ * 
+ * 3. Set Platform fees and collecting
+ * 
+ */
 
 Clarinet.test({
-    name: "Pool creation, adding values and reducing values",
+    name: "FWP : Pool creation, adding values and reducing values",
 
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get("deployer")!;
+        
         let wallet_1 =accounts.get('wallet_1')!;
         let FWPTestAgent = new FWPTestAgent1(chain, deployer);
         
-        // let result = FWPTestAgent.createPool(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, gAlexUsdaPoolAddress, alexVaultAddress, "gALEX-USDA", 500, 100);
-        // result.expectOk().expectBool(true);
+        let result = FWPTestAgent.createPool(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, gAlexUsdaPoolAddress, alexVaultAddress, 50000, 10000);
+        result.expectOk().expectBool(true);
 
         // // Check pool details
         // let call = await FWPTestAgent.getPoolDetails(gAlexTokenAddress, usdaTokenAddress,testWeightX, testWeightY);
         // call.result.expectOk();
 
-        // // Add extra lquidity
-        // result = FWPTestAgent.addToPosition(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, gAlexUsdaPoolAddress, alexVaultAddress, 500, 100);
-        // result.expectOk().expectBool(true);
+        // Add extra liquidity
+        result = FWPTestAgent.addToPosition(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, gAlexUsdaPoolAddress, alexVaultAddress, 50000, 10000);
+        result.expectOk().expectBool(true);
 
-        // // Reduce liquidlity
-        // result = FWPTestAgent.reducePosition(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, gAlexUsdaPoolAddress, alexVaultAddress, 100);
-        // result.expectOk().expectList()[0].expectUint(1000000000);
-        // result.expectOk().expectList()[1].expectUint(200000000);
-        // Recheck pool details
+        // Reduce liquidlity
+        result = FWPTestAgent.reducePosition(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, gAlexUsdaPoolAddress, alexVaultAddress, 10000);
+        let position:any =result.expectOk().expectTuple();
+            position['dx'].expectUint(9999000);
+            position['dy'].expectUint(9999000);
     },
 });
 
 Clarinet.test({
-    name: "Swapping Token Test",
+    name: "FWP : Swapping Token Test",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get("deployer")!;
         let wallet_1 =accounts.get('wallet_1')!;
         let FWPTestAgent = new FWPTestAgent1(chain, deployer);
         
-        // let result = FWPTestAgent.createPool(deployer, gAlexTokenAddress, usdaTokenAddress, 0.5,0.5, gAlexUsdaPoolAddress, alexVaultAddress, "gALEX-USDA", 500, 100);
-        // result.expectOk().expectBool(true);
+        let result = FWPTestAgent.createPool(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, gAlexUsdaPoolAddress, alexVaultAddress, 50000, 10000);
+        result.expectOk().expectBool(true);
 
+        // default pool balance should be added first. Error thrown with zero balance
+        result = FWPTestAgent.getYgivenX(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, 1000);
+        result.expectOk().expectUint(195097600)
+        
         // Swap
-        // result = FWPTestAgent.swapXForY(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, gAlexUsdaPoolAddress, alexVaultAddress, 200);
-        // result.expectOk().expectList()[0].expectUint(200000000); 
-        // K = 1000 * 5000 = 5,000,000
-        // y = K / 5200 = 961.53
-        // So user would get: 1000 - 961.53 = 38.46
-        // Minus 0.3% fees
-        // result.expectOk().expectList()[1].expectUint(38350578); 
+        result = FWPTestAgent.swapXForY(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, alexVaultAddress, 200);
+        result.expectOk().expectList()[0].expectUint(200000000); 
+        result.expectOk().expectList()[1].expectUint(38844200); 
+        // TODO : Operation illustration
 
     },
 });
 
+Clarinet.test({
+    name: "FWP : Setting a Fee to principal",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        let deployer = accounts.get("deployer")!;
+        let wallet_1 =accounts.get('wallet_1')!;
+        let FWPTestAgent = new FWPTestAgent1(chain, deployer);
+        
+        let result = FWPTestAgent.createPool(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, gAlexUsdaPoolAddress, alexVaultAddress, 50000, 10000);
+        result.expectOk().expectBool(true);
+
+        // Fees will be transferred to wallet_1
+        result = FWPTestAgent.setFeetoAddress(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY, wallet_1.address);
+        result.expectOk().expectBool(true);
+        
+       // Check whether it is correctly settled
+        result = FWPTestAgent.getFeetoAddress(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY);
+        result.expectOk().expectPrincipal(wallet_1.address);
+
+        // // Collect Fees - TO BE IMPLEMENTED AFTER FEE COLLECTOR IMPLEMENTATION
+        // result = FWPTestAgent.collectFees(deployer, gAlexTokenAddress, usdaTokenAddress, testWeightX, testWeightY);
+        // result.expectOk()
+    },
+});

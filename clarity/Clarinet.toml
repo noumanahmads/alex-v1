@@ -37,6 +37,10 @@ depends_on = ['trait-vault','trait-flash-loan-user','trait-sip-010','trait-vault
 path = "contracts/token-alex.clar"
 depends_on = ["trait-sip-010", "trait-alex-token"]
 
+[contracts.token-ayusda]
+path = "contracts/token-ayusda.clar"
+depends_on = ["trait-sip-010", "trait-yield-token"]
+
 [contracts.token-usda]
 path = "contracts/token-usda.clar"
 depends_on = ["trait-sip-010", "trait-alex-token"]

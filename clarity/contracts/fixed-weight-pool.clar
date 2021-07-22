@@ -90,17 +90,19 @@
    )
 )
 
-;; TODO: shouldn't the pool token be created as part of create-pool?
-(define-public (create-pool 
-                        (token-x-trait <ft-trait>) 
-                        (token-y-trait <ft-trait>) 
-                        (weight-x uint) 
-                        (weight-y uint) 
-                        (the-pool-token <pool-token-trait>) 
-                        (the-vault <vault-trait>) 
-                        (dx uint) 
-                        (dy uint)
-                ) 
+;; get overall balances for the pair
+(define-public (get-balances (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
+  (let
+    (
+      (token-x (contract-of token-x-trait))
+      (token-y (contract-of token-y-trait))
+      (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y  }) (err invalid-pool-err)))
+    )
+    (ok (list (get balance-x pool) (get balance-y pool)))
+  )
+)
+
+(define-public (create-pool (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (the-pool-token <pool-token-trait>) (the-vault <vault-trait>) (dx uint) (dy uint)) 
     (let
         (
             (token-x (contract-of token-x-trait))
@@ -129,6 +131,7 @@
         
         (var-set pools-list (unwrap! (as-max-len? (append (var-get pools-list) pool-id) u2000) too-many-pools-err))
         (var-set pool-count pool-id)
+        ;; Deployer should inject the initial coins to the pool
         (try! (add-to-position token-x-trait token-y-trait weight-x weight-y the-pool-token the-vault dx dy))
         (print { object: "pool", action: "created", data: pool-data })
         (ok true)
