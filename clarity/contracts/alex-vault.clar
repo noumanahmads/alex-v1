@@ -7,6 +7,7 @@
 (define-constant user-execute-err (err u101))
 (define-constant transfer-one-by-one-err (err u102))
 (define-constant transfer-failed-err (err u72))
+(define-constant none-token-err (err u103))
 
 
 (define-data-var pre-loan-balance uint u0)
@@ -37,19 +38,25 @@
                 (amount1 uint)
                 (amount2 uint)
                 (amount3 (optional uint)))
-  
-  ;; TODO: step 0 validate input parameters
   (begin 
       ;; TODO: step 1 transfer tokens to user one by one
       (asserts! (is-ok (transfer-to-user flash-loan-user token1 amount1)) transfer-one-by-one-err)  
       (asserts! (is-ok (transfer-to-user flash-loan-user token2 amount2)) transfer-one-by-one-err)
-      (asserts! (is-ok (transfer-to-user flash-loan-user (unwrap-panic token3) (unwrap-panic amount3))) transfer-one-by-one-err)
+      ;; At least It wouldn't been called when the token3 is none
+      (if (is-some token3) 
+        (asserts! (is-ok (transfer-to-user flash-loan-user (unwrap! token3 none-token-err) amount2)) transfer-one-by-one-err)
+        false
+       )
     ;; TODO: step 2 call user.execute. the one could do anything then pay the tokens back ,see test-flash-loan-user
       (asserts! (is-ok (contract-call? flash-loan-user execute token1 token2 token3 amount1 amount2 amount3 tx-sender)) user-execute-err)
     ;; TODO: step 3 check if the balance is incorrect
       (asserts! (is-ok (after-pay-back-check token1 u0)) transfer-one-by-one-err)
       (asserts! (is-ok (after-pay-back-check token2 u1)) transfer-one-by-one-err)
-      (asserts! (is-ok (after-pay-back-check (unwrap-panic token3) u2)) transfer-one-by-one-err)
+      (if (is-some token3) 
+        (asserts! (is-ok (after-pay-back-check (unwrap! token3 none-token-err) u2)) transfer-one-by-one-err)
+        false
+       )
+      ;; (asserts! (is-ok (after-pay-back-check (unwrap! token3 none-token-err) u2)) transfer-one-by-one-err)
       (ok true)
   )
 )
