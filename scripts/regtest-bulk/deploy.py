@@ -37,8 +37,9 @@ for file in os.listdir(contracts):
     clarity_name = file.split('.')[0]
     print(clarity_name)
     full_contract_name = clarity_name + version_folder
+    deployed_name = clarity_name + "-" + version_folder
     contract_name_json = clarity_name + series_and_developer
-    res1 = subprocess.check_output(f"stx deploy_contract -x -t ./contracts/{clarity_name}.clar {full_contract_name} 50000 {nonce} $(cat ./deploy_keychain.json | jq -r .keyInfo.privateKey) > ./hex-files/{version_folder}/{full_contract_name}.hex", shell=True)
+    res1 = subprocess.check_output(f"stx deploy_contract -x -t ./contracts/{clarity_name}.clar {deployed_name} 50000 {nonce} $(cat ./deploy_keychain.json | jq -r .keyInfo.privateKey) > ./hex-files/{version_folder}/{full_contract_name}.hex", shell=True)
     txid = subprocess.check_output(f"cat ./hex-files/{version_folder}/{full_contract_name}.hex | xxd -p -r | curl -H \"Content-Type: application/octet-stream\" -X POST --data-binary @- https://stacks-node-api.regtest.stacks.co/v2/transactions", shell=True)
     print(txid)
     meta_data['Contracts'].append({"name": contract_name_json, "version": version, "deployer": address, "txid": "0x"+txid.decode('utf-8').strip('"')})
