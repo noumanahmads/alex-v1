@@ -1,11 +1,4 @@
 # Clarity History
 clarity/history.txt
 
-**/contract-records/*
-!/contract-records/.gitkeep
-
-**/hex-files/*
-!/hex-files/.gitkeep
-
-**/staged-contracts/*
-!/staged-contracts/.gitkeep
+deploy-keychain.json
