@@ -1,8 +1,11 @@
+;;;;;;;;;;;;;;;;;;;;; SIP 010 ;;;;;;;;;;;;;;;;;;;;;;
+;; testnet: (impl-trait 'STR8P3RD1EHA8AA37ERSSSZSWKS9T2GYQFGXNA4C.sip-010-trait-ft-standard.sip-010-trait)
+;; (impl-trait 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.sip-010-trait)
 (impl-trait .trait-sip-010.sip-010-trait)
 (impl-trait .trait-alex-token.dao-token-trait)
 
-;; Defines the wBTC according to the SIP-010 Standard
-(define-fungible-token wbtc)
+;; Defines the USDA Stablecoin according to the SIP-010 Standard
+(define-fungible-token usda)
 
 (define-data-var token-uri (string-utf8 256) u"")
 
@@ -14,15 +17,15 @@
 ;; ---------------------------------------------------------
 
 (define-read-only (get-total-supply)
-  (ok (ft-get-supply wbtc))
+  (ok (ft-get-supply usda))
 )
 
 (define-read-only (get-name)
-  (ok "WBTC")
+  (ok "USDA")
 )
 
 (define-read-only (get-symbol)
-  (ok "WBTC")
+  (ok "USDA")
 )
 
 (define-read-only (get-decimals)
@@ -30,11 +33,11 @@
 )
 
 (define-read-only (get-balance (account principal))
-  (ok (ft-get-balance wbtc account))
+  (ok (ft-get-balance usda account))
 )
 
 (define-public (set-token-uri (value (string-utf8 256)))
-  ;;(if (is-eq tx-sender (contract-call? . get-dao-owner))
+  ;;(if (is-eq tx-sender (contract-call? .arkadiko-dao get-dao-owner))
     (ok (var-set token-uri value))
   ;;  (err ERR-NOT-AUTHORIZED)
   ;;)
@@ -45,7 +48,7 @@
 )
 
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
-  (match (ft-transfer? wbtc amount sender recipient)
+  (match (ft-transfer? usda amount sender recipient)
     response (begin
       (print memo)
       (ok response)
@@ -55,22 +58,22 @@
 )
 
 ;; ---------------------------------------------------------
-;; wbtc token trait
+;; usda token trait
 ;; ---------------------------------------------------------
 
-;; Mint method for wbtc
+;; Mint method for usda
 (define-public (mint-for-dao (amount uint) (recipient principal))
   (begin
-    ;;(asserts! (is-eq contract-caller .) (err ERR-NOT-AUTHORIZED))
-    (ft-mint? wbtc amount recipient)
+    ;;(asserts! (is-eq contract-caller .arkadiko-dao) (err ERR-NOT-AUTHORIZED))
+    (ft-mint? usda amount recipient)
   )
 )
 
-;; Burn method for wbtc
+;; Burn method for usda
 (define-public (burn-for-dao (amount uint) (sender principal))
   (begin
-    ;;(asserts! (is-eq contract-caller .) (err ERR-NOT-AUTHORIZED))
-    (ft-burn? wbtc amount sender)
+    ;;(asserts! (is-eq contract-caller .arkadiko-dao) (err ERR-NOT-AUTHORIZED))
+    (ft-burn? usda amount sender)
   )
 )
 
@@ -78,6 +81,6 @@
 ;; Initialize the contract for Testing.
 (begin
   ;; TODO: Erase on testnet or mainnet
-  (try! (ft-mint? wbtc u1000000000000 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE)) ;; Deployer
-  (try! (ft-mint? wbtc u1000000000000 'ST14YKBTNC0V2QXS3DSGFVCBJHQ7RM396511TJBTJ)) ;; Wallet 1
+  (try! (ft-mint? usda u1000000000000 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE)) ;; Deployer
+  (try! (ft-mint? usda u1000000000000 'ST14YKBTNC0V2QXS3DSGFVCBJHQ7RM396511TJBTJ)) ;; Wallet 1
 )
