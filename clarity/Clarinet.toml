@@ -25,8 +25,8 @@ depends_on = ["trait-sip-010", "trait-pool-token", "trait-vault", "math-fixed-po
 path = "contracts/key-usda-wbtc-4380.clar"
 depends_on = ["trait-sip-010", "trait-yield-token", "token-usda"]
 
-[contracts.key-usda-wbtc-59760]
-path = "contracts/key-usda-wbtc-59760.clar"
+[contracts.key-usda-wbtc-59770]
+path = "contracts/key-usda-wbtc-59770.clar"
 depends_on = ["trait-sip-010", "trait-yield-token", "token-usda"]
 
 [contracts.liquidity-bootstrapping-pool]
@@ -129,6 +129,6 @@ depends_on = ["trait-sip-010", "trait-yield-token", "token-usda"]
 path = "contracts/yield-usda-4380.clar"
 depends_on = ["trait-sip-010", "trait-yield-token", "token-usda"]
 
-[contracts.yield-usda-59760]
-path = "contracts/yield-usda-59760.clar"
+[contracts.yield-usda-59770]
+path = "contracts/yield-usda-59770.clar"
 depends_on = ["trait-sip-010", "trait-yield-token", "token-usda"]
