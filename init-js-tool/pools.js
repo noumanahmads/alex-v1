@@ -9,6 +9,7 @@ const {
     contractPrincipalCV,
     broadcastTransaction
   } = require('@stacks/transactions');
+const { BN } = require('bn.js');
 
 const createFWP = async () => {
     const privateKey = await getPK();
@@ -21,9 +22,9 @@ const createFWP = async () => {
             contractPrincipalCV(process.env.ACCOUNT_ADDRESS, 'token-usda'),
             uintCV(5*1e7),
             uintCV(5*1e7),
-            contractPrincipalCV(process.env.ACCOUNT_ADDRESS,'pool-token-usda-59760-usda'),
-            uintCV(5*1e11),
-            uintCV(1e11),
+            contractPrincipalCV(process.env.ACCOUNT_ADDRESS,'fwp-wbtc-usda'),
+            uintCV(10000*1e8),
+            uintCV(500000000*1e8),
         ],
         senderKey: privateKey,
         validateWithAbi: true,
@@ -48,11 +49,9 @@ const createCRP = async (yiedToken, keyToken) => {
         functionArgs: [
             contractPrincipalCV(process.env.ACCOUNT_ADDRESS, 'token-wbtc'),
             contractPrincipalCV(process.env.ACCOUNT_ADDRESS, 'token-usda'),
-            // contractPrincipalCV(process.env.ACCOUNT_ADDRESS, 'yield-usda-59760'),
-            // contractPrincipalCV(process.env.ACCOUNT_ADDRESS, 'key-usda-wbtc-59760'),
             contractPrincipalCV(process.env.ACCOUNT_ADDRESS, yiedToken),
             contractPrincipalCV(process.env.ACCOUNT_ADDRESS, keyToken),
-            uintCV(10*1e8),
+            uintCV(100000*1e8),
         ],
         senderKey: privateKey,
         validateWithAbi: true,
@@ -78,8 +77,8 @@ const createYTP = async (yiedToken, token, poolToken) => {
             contractPrincipalCV(process.env.ACCOUNT_ADDRESS, yiedToken),
             contractPrincipalCV(process.env.ACCOUNT_ADDRESS, token),
             contractPrincipalCV(process.env.ACCOUNT_ADDRESS, poolToken),
-            uintCV(10*1e8),
-            uintCV(10*1e8),
+            uintCV(100*1e8),
+            uintCV(100*1e8),
         ],
         senderKey: privateKey,
         validateWithAbi: true,
@@ -95,6 +94,25 @@ const createYTP = async (yiedToken, token, poolToken) => {
         console.log(error);
     }
 }
+const swapYForX = async (yieldToken, token)=>{
+    const privateKey = await getPK();
+    const txOptions = {
+        contractAddress: process.env.ACCOUNT_ADDRESS,
+        contractName: 'yield-token-pool',
+        functionName: 'swap-y-for-x',
+        functionArgs: [
+            contractPrincipalCV(process.env.ACCOUNT_ADDRESS, yieldToken),
+            contractPrincipalCV(process.env.ACCOUNT_ADDRESS, token),
+            uintCV(2*1e8),
+        ],
+        senderKey: privateKey,
+        validateWithAbi: true,
+        network,
+        anchorMode: AnchorMode.Any,
+        postConditionMode: PostConditionMode.Allow,
+    };
+}
 exports.createFWP = createFWP;
 exports.createCRP = createCRP;
 exports.createYTP = createYTP;
+exports.swapYForX = swapYForX;

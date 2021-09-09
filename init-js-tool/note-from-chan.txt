@@ -1,0 +1,77 @@
+Example for 59760 one month
+
+No LTV = (contract-call? .collateral-rebalancing-pool get-ltv wbtc usda u5976000000000))
+Yes Work Available liquidity = (contract-call? .yield-token-pool get-pool-value-in-token yield-wbtc-59760 wbtc))
+APY = (/ (* (contract-call? .yield-token-pool get-yield yield-wbtc-59760) u52560) (u5976000000000 - (* current block-height u100000000))
+[u52560 is a constant, u100000000 is a constant, u5976000000000 = expiry * u100000000]
+Maturity = [let's display block-height for now]
+Estimated Interest = (* dx (/ (contract-call? .yield-token-pool get-yield yield-wbtc-59760) u100000000))
+Estimated TX cost = [0 for now]
+
+
+Example for 59760
+COnfirm => (contract-call? .yield-token-pool swap-x-for-y yield-wbtc-59760 wbtc dx)
+
+Borrow
+
+Example for 59760
+
+LTV = (contract-call? .yield-token-pool get-ltv yield-wbtc-59760)
+Available liquidity = (contract-call? .yield-token-pool get-pool-value-in-token yield-wbtc-59760 wbtc)
+Collateral required = borrow amount 
+                                / (contract-call? .yield-token-pool get-price yield-wbtc-59760) 
+                                / (contract-call? .open-oracle get-price oracle-src usda) 
+                                / LTV
+
+
+
+
+
+[environment set-up]
+;; create-fwp with 10,000 BTC and 500,000,000 USDA
+(contract-call? .fixed-weight-pool create-pool wbtc usda u50000000 u50000000 fwp-wbtc-usda u10000e8 u500000000e8)
+
+;; create ytp with 100 BTC each side
+(contract-call? .yield-token-pool create-pool yield-wbtc-59760 
+wbtc 
+ytp-yield-wbtc-59760-wbtc 
+u100e8 
+u100e8)
+(contract-call? .yield-token-pool create-pool yield-wbtc-79760 
+wbtc 
+ytp-yield-wbtc-79760-wbtc 
+u100e8 
+u100e8)
+
+;; assume 1 BTC = $50,000. post $100k collateral and mint yield-wbtc 
+(contract-call? .collateral-rebalancing-pool create-pool 
+wbtc 
+usda 
+yield-wbtc-59760 
+key-wbtc-59760-usda 
+u100000e8)
+(contract-call? .collateral-rebalancing-pool create-pool wbtc usda yield-wbtc-79760 key-wbtc-79760-usda u100000e8)
+
+;; sell 2 yield-wbtc and buy wbtc to move the interest curve > 0
+(contract-call? .yield-token-pool swap-y-for-x yield-wbtc-59760 
+wbtc 
+u2e8)
+(contract-call? .yield-token-pool swap-y-for-x yield-wbtc-79760 
+wbtc 
+u2e8)
+
+;; after the above, we should have the following balance at ytp:
+ytp-yield-wbtc-59760-wbtc => u102e8 yield-wbtc-59760 / u98e8 wbtc 
+=> implying get-yield => u0.04e8
+ytp-yield-wbtc-79760-wbtc => u102e8 yield-wbtc-79760 / u98e8 wbtc 
+=> implying get-yield => u0.04e8
+
+[Liquidity]
+(contract-call? .yield-token-pool get-pool-value-in-token yield-wbtc-59760 wbtc)) 
+=> expectUint(u200e8)
++
+(contract-call? .yield-token-pool get-pool-value-in-token yield-wbtc-79760 wbtc)) 
+=> expectUint(u200e8)
+
+[For min APY and max APY, see below the contract calls you need to get APY]
+
