@@ -9,7 +9,6 @@ const {
     contractPrincipalCV,
     broadcastTransaction
   } = require('@stacks/transactions');
-const { BN } = require('bn.js');
 
 const createFWP = async () => {
     const privateKey = await getPK();
