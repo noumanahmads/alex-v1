@@ -1,12 +1,12 @@
 require('dotenv').config();
-const { initCoinPrice, setOpenOracle } = require('./oracles').default;
+const { initCoinPrice, setOpenOracle,test } = require('./oracles').default;
 const { createFWP, createCRP, createYTP, swapYForX } = require('./pools');
 async function run() {
   // const {usdc, btc} = await initCoinPrice()
-  //Need to call it one by one, or you'll receive 'ConflictingNonceInMempool' Error
-  //await setOpenOracle('WBTC','CoinGecko', btc);
-  //await setOpenOracle('USDA','CoinGecko', usdc);
-//   await createFWP()
+  // Need to call it one by one, or you'll receive 'ConflictingNonceInMempool' Error
+  // await setOpenOracle('WBTC','CoinGecko', btc);
+  // await setOpenOracle('USDA','CoinGecko', usdc);
+  // await createFWP()
 //   await createYTP(
 //     'yield-wbtc-59760',
 //     'token-wbtc',

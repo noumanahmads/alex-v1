@@ -5,7 +5,8 @@ const {
   AnchorMode,
   stringAsciiCV,
   uintCV,
-  broadcastTransaction
+  broadcastTransaction,
+  callReadOnlyFunction
 } = require('@stacks/transactions');
 
 
@@ -60,8 +61,29 @@ const setOpenOracle = async (symbol, src, price) => {
     console.log(error);
   }
 };
+const test = async ()=>{
+  // const options = {
+  //   contractAddress: process.env.ACCOUNT_ADDRESS,
+  //   contractName: '',
+  //   functionName: ,
+  //   functionArgs: [],
+  //   network,
+  //   senderAddress: this.config!.senderAddress,
+  // };
+  // console.log("callReadOnly", options);
+  // return new Promise(async (resolve) => {
+  //   try {
+  //     const result = await callReadOnlyFunction(options);
+  //     resolve(new ReadOnlyResultVO(result));
+  //   } catch (error) {
+  //     console.log(error);
+  //     resolve(ReadOnlyResultVO.failVO());
+  //   }
+  // });
+}
 
 exports.default = {
   initCoinPrice,
-  setOpenOracle
+  setOpenOracle,
+  test
 }
