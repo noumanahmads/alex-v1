@@ -20,7 +20,6 @@ async function run() {
   //   'ytp-yield-wbtc-79760-wbtc',
   //   'multisig-ytp-yield-wbtc-79760-wbtc'
   // );
-  // await createYTP('yield-usda-59760','token-wbtc', 'pool-token-usda-59760-usda');
   // await createCRP(
   //   'yield-wbtc-59760',
   //   'key-wbtc-59760-usda',
