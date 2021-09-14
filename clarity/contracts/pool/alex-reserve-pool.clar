@@ -20,7 +20,7 @@
 (define-constant get-oracle-price-fail-err (err u7000))
 (define-constant expiry-err (err u2017))
 (define-constant get-balance-fail-err (err u6001))
-(define-constant err-not-authorized (err u1000))
+(define-constant not-authorized-err (err u1000))
 
 (define-constant oracle-src "nothing")
 
@@ -50,7 +50,7 @@
 
         ;; all usdc amount is transferred
         (try! (contract-call? .token-usda transfer usda-amount tx-sender (as-contract tx-sender) none))
-        ;; portion of that (by rebate-rate) is minted as alex and transferred
+        ;; portion of that (by rebate-rate) is minted as alex and transferred        
         (try! (contract-call? .token-alex mint tx-sender alex-to-rebate))
     
         (print { object: "reserve-pool", action: "transfer-to-mint", data: alex-to-rebate })
