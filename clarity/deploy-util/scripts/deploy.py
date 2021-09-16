@@ -17,7 +17,7 @@ version = input("-")
 
 version_folder = folder + "-" + version
 
-res = subprocess.check_output(f"cat ../hex-files/get-nonce/get-nonce1.hex | xxd -p -r | curl -H \"Content-Type: application/octet-stream\" -X POST --data-binary @- https://stacks-node-api.regtest.stacks.co/v2/transactions", shell=True)
+res = subprocess.check_output(f"cat ../hex-files/get-nonce/get-nonce1.hex | xxd -p -r | curl -H \"Content-Type: application/octet-stream\" -X POST --data-binary @- https://regtest-2.alexgo.io/v2/transactions", shell=True)
 data = json.loads(res)
 expected_nonce = data['reason_data']['expected']
 print(f"Nonce is {expected_nonce}")
@@ -29,7 +29,7 @@ for file in os.listdir(contracts):
     print(file)
     clarity_name = file.split('.')[0]
     res1 = subprocess.check_output(f"stx deploy_contract -x -t ./{contracts}/{file} {clarity_name} 70000 {nonce} $(cat ./deploy-keychain.json | jq -r .keyInfo.privateKey) > ../hex-files/{version_folder}/{clarity_name}.hex", shell=True)
-    txid = subprocess.check_output(f"cat ../hex-files/{version_folder}/{clarity_name}.hex | xxd -p -r | curl -H \"Content-Type: application/octet-stream\" -X POST --data-binary @- https://stacks-node-api.regtest.stacks.co/v2/transactions", shell=True)
+    txid = subprocess.check_output(f"cat ../hex-files/{version_folder}/{clarity_name}.hex | xxd -p -r | curl -H \"Content-Type: application/octet-stream\" -X POST --data-binary @- https://regtest-2.alexgo.io/v2/transactions", shell=True)
     meta_data['Contracts'].append({"name": clarity_name, "version": version, "deployer": address, "txid": "0x"+txid.decode('utf-8').strip('"')})
     nonce += 1
 

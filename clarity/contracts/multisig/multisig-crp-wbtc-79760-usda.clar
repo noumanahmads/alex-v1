@@ -150,7 +150,7 @@
     )
     (var-set proposal-count proposal-id)
     (var-set proposal-ids (unwrap-panic (as-max-len? (append (var-get proposal-ids) proposal-id) u100)))
-    (ok proposal-id)
+    (ok true)
   )
 )
 
