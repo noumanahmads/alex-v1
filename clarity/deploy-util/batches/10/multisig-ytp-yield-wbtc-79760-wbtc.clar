@@ -1,4 +1,5 @@
 (impl-trait .trait-multisig-vote.multisig-vote-trait)
+(use-trait yield-token-trait .trait-yield-token.yield-token-trait)
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
 
 
@@ -42,8 +43,8 @@
     end-block-height: uint,
     yes-votes: uint,
     no-votes: uint,
-    new-fee-rate-x: uint,
-    new-fee-rate-y: uint
+    new-fee-rate-token: uint,
+    new-fee-rate-aytoken: uint
    }
 )
 
@@ -95,8 +96,8 @@
       end-block-height: u0,
       yes-votes: u0,
       no-votes: u0,
-      new-fee-rate-x: u0,    
-      new-fee-rate-y: u0  
+      new-fee-rate-token: u0,    ;; Default token feerate
+      new-fee-rate-aytoken: u0  ;; default aytoken feerate
     }
     (map-get? proposals { id: proposal-id })
   )
@@ -104,7 +105,7 @@
 
 ;; To check which tokens are accepted as votes, Only by staking Pool Token is allowed. 
 (define-read-only (is-token-accepted (token <ft-trait>))
-    (is-eq (contract-of token) .fwp-wbtc-usda-50-50)
+    (is-eq (contract-of token) .ytp-yield-wbtc-79760-wbtc)
 )
 
 
@@ -115,12 +116,12 @@
     (start-block-height uint)
     (title (string-utf8 256))
     (url (string-utf8 256))
-    (new-fee-rate-x uint)
-    (new-fee-rate-y uint)
+    (new-fee-rate-token uint)
+    (new-fee-rate-aytoken uint)
   )
   (let (
-    (proposer-balance (unwrap-panic (contract-call? .fwp-wbtc-usda-50-50 get-balance tx-sender)))
-    (total-supply (unwrap-panic (contract-call? .fwp-wbtc-usda-50-50 get-total-supply)))
+    (proposer-balance (* (unwrap-panic (contract-call? .ytp-yield-wbtc-79760-wbtc get-balance tx-sender)) ONE_8))
+    (total-supply (* (unwrap-panic (contract-call? .ytp-yield-wbtc-79760-wbtc get-total-supply)) ONE_8))
     (proposal-id (+ u1 (var-get proposal-count)))
   )
 
@@ -139,8 +140,8 @@
         end-block-height: (+ start-block-height u1440),
         yes-votes: u0,
         no-votes: u0,
-        new-fee-rate-x: new-fee-rate-x,
-        new-fee-rate-y: new-fee-rate-y
+        new-fee-rate-token: new-fee-rate-token,
+        new-fee-rate-aytoken: new-fee-rate-aytoken
       }
     )
     (var-set proposal-count proposal-id)
@@ -182,6 +183,9 @@
     )
   )
 
+
+
+
 (define-public (vote-against (token <ft-trait>) (proposal-id uint) (amount uint))
   (let (
     (proposal (get-proposal-by-id proposal-id))
@@ -207,7 +211,6 @@
     (map-set tokens-by-member
       { proposal-id: proposal-id, member: tx-sender, token: (contract-of token) }
       { amount: (+ amount token-count)})
-
     (ok amount)
     )
     
@@ -216,7 +219,7 @@
 (define-public (end-proposal (proposal-id uint))
   (let ((proposal (get-proposal-by-id proposal-id))
         (threshold-percent (var-get threshold))
-        (total-supply (unwrap-panic (contract-call? .fwp-wbtc-usda-50-50 get-total-supply)))
+        (total-supply (* (unwrap-panic (contract-call? .ytp-yield-wbtc-79760-wbtc get-total-supply)) ONE_8))
         (threshold-count (unwrap-panic (contract-call? .math-fixed-point mul-up total-supply threshold-percent)))
         (yes-votes (get yes-votes proposal))
   )
@@ -230,9 +233,8 @@
       (merge proposal { is-open: false }))
 
     ;; Execute the proposal when the yes-vote passes threshold-count.
-     (and (> yes-votes threshold-count) (try! (execute-proposal proposal-id)))
-     (ok status-ok)
-    )
+    (and (> yes-votes threshold-count) (try! (execute-proposal proposal-id)))
+    (ok status-ok))
 )
 
 ;; Return votes to voter(member)
@@ -240,7 +242,7 @@
 (define-public (return-votes-to-member (token <ft-trait>) (proposal-id uint) (member principal))
   (let 
     (
-      (token-count (get amount (get-tokens-by-member-by-id proposal-id member token)))
+      (token-count (/ (get amount (get-tokens-by-member-by-id proposal-id member token)) ONE_8))
       (proposal (get-proposal-by-id proposal-id))
     )
 
@@ -258,24 +260,14 @@
 (define-private (execute-proposal (proposal-id uint))
   (let (
     (proposal (get-proposal-by-id proposal-id))
-    (new-fee-rate-x (get new-fee-rate-x proposal))
-    (new-fee-rate-y (get new-fee-rate-y proposal))
+    (new-fee-rate-token (get new-fee-rate-token proposal))
+    (new-fee-rate-aytoken (get new-fee-rate-aytoken proposal))
   ) 
   
     ;; Setting for Yield Token Pool
-    (try! (contract-call? .fixed-weight-pool set-fee-rate-x .token-wbtc .token-usda u50000000 u50000000 new-fee-rate-x))
-    (try! (contract-call? .fixed-weight-pool set-fee-rate-y .token-wbtc .token-usda u50000000 u50000000 new-fee-rate-y))
+    (try! (contract-call? .yield-token-pool set-fee-rate-token .yield-wbtc-79760 new-fee-rate-token))
+    (try! (contract-call? .yield-token-pool set-fee-rate-aytoken .yield-wbtc-79760 new-fee-rate-aytoken))
     
     (ok true)
   )
-)
-
-
-(define-public (collect-fees-to-multisig)
-    ;; TODO : Conditions for moving collected balance to multisig
-    ;; Collect Fee from pool to multisig 
-    (begin
-      (try! (contract-call? .fixed-weight-pool collect-fees .token-wbtc .token-usda u50000000 u50000000))
-      (ok true)
-    )
 )
