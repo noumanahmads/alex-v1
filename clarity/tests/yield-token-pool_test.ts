@@ -261,13 +261,13 @@ Clarinet.test({
         let ytpPoolToken = new POOLTOKEN_YTP_WBTC_WBTC_59760(chain, deployer);
         let usdaToken = new USDAToken(chain, deployer);
         let wbtcToken = new WBTCToken(chain, deployer);
-        const buffer = new ArrayBuffer(34)
+        const buffer = new ArrayBuffer(0)
         const feeRateX = 5000000; // 5%
         const feeRateY = 5000000;
 
-        // let money = usdaToken.transferToken(10*ONE_8,deployer.address,wallet_1.address, buffer);
-        // money = wbtcToken.transferToken(10*ONE_8,deployer.address,wallet_1.address, buffer);
-        // money.expectOk()
+        let money = usdaToken.transferToken(10*ONE_8,deployer.address,wallet_2.address, buffer);
+        money = wbtcToken.transferToken(10*ONE_8,deployer.address,wallet_2.address, buffer);
+        money.expectOk()
 
         //Deployer creating a pool, initial tokens injected to the pool
         let result = YTPTest.createPool(deployer, yieldwbtc59760Address, wbtcAddress, ytpyieldwbtc59760Address, multisigytpyieldwbtc59760, 1000*ONE_8, 1000*ONE_8);
@@ -320,5 +320,99 @@ Clarinet.test({
         result.expectOk().expectBool(true) // Success 
 
         
+    },    
+});
+
+
+Clarinet.test({
+    name: "YTP : Error Test Cases ",
+
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        let deployer = accounts.get("wallet_1")!;
+        let wallet_2 = accounts.get("wallet_2")!;
+        let YTPTest = new YTPTestAgent1(chain, deployer);
+        let MultiSigTest = new MS_YTP_WBT_59760(chain, deployer);
+        let ytpPoolToken = new POOLTOKEN_YTP_WBTC_WBTC_59760(chain, deployer);
+        let usdaToken = new USDAToken(chain, deployer);
+        let wbtcToken = new WBTCToken(chain, deployer);
+        const buffer = new ArrayBuffer(0)   // Optional memo
+        const feeRateX = 5000000; // 5%
+        const feeRateY = 5000000;
+
+        let money = usdaToken.transferToken(10*ONE_8,deployer.address,wallet_2.address, buffer);
+        money = wbtcToken.transferToken(10*ONE_8,deployer.address,wallet_2.address, buffer);
+        money.expectOk()
+
+        //Deployer creating a pool, initial tokens injected to the pool
+        let result = YTPTest.createPool(deployer, yieldwbtc59760Address, wbtcAddress, ytpyieldwbtc59760Address, multisigytpyieldwbtc59760, 1000*ONE_8, 1000*ONE_8);
+        result.expectOk().expectBool(true);
+
+        // Duplicated Pool 
+        result = YTPTest.createPool(deployer, yieldwbtc59760Address, wbtcAddress, ytpyieldwbtc59760Address, multisigytpyieldwbtc59760, 1000*ONE_8, 1000*ONE_8);
+        result.expectErr().expectUint(2000);
+
+        // Check pool details and print
+        let call = await YTPTest.getPoolDetails(yieldwbtc59760Address);
+        let position:any = call.result.expectOk().expectTuple();
+        position['balance-token'].expectUint(1000*ONE_8);
+        position['balance-aytoken'].expectUint(0);
+        position['balance-virtual'].expectUint(1000*ONE_8);
+        
+        //Attempt to add extra liquidity but not enough balance
+        result = YTPTest.addToPosition(deployer, yieldwbtc59760Address, wbtcAddress, ytpyieldwbtc59760Address, 1000000*ONE_8);
+        position = result.expectErr().expectUint(3001)
+
+        // Another user attempts to reduce liquidity with not enough pool token 
+        result = YTPTest.reducePosition(wallet_2, yieldwbtc59760Address, wbtcAddress, ytpyieldwbtc59760Address, 1*ONE_8);
+        position =result.expectErr().expectUint(1)
+
+        // Deployer adds liquidity
+        result = YTPTest.addToPosition(deployer, yieldwbtc59760Address, wbtcAddress, ytpyieldwbtc59760Address, 1000*ONE_8);
+        position = result.expectOk().expectTuple();
+        position['supply'].expectUint(1000*ONE_8);
+        position['balance-token'].expectUint(1000*ONE_8);
+        position['balance-aytoken'].expectUint(0);
+        position['balance-virtual'].expectUint(1000*ONE_8);     
+
+        // Another User adds liquidity
+        result = YTPTest.addToPosition(wallet_2, yieldwbtc59760Address, wbtcAddress, ytpyieldwbtc59760Address, 10*ONE_8);
+        position = result.expectOk().expectTuple();
+        position['supply'].expectUint(10*ONE_8);
+        position['balance-token'].expectUint(10*ONE_8);
+        position['balance-aytoken'].expectUint(0);
+        position['balance-virtual'].expectUint(10*ONE_8);     
+
+        // Another user attempts to reduce liquidity with zero value
+        result = YTPTest.reducePosition(wallet_2, yieldwbtc59760Address, wbtcAddress, ytpyieldwbtc59760Address, 0);
+        position =result.expectErr().expectUint(1)
+
+        // False swap value -- to be checked
+        result = YTPTest.swapYForX(deployer, yieldwbtc59760Address, wbtcAddress, 0);
+        position =result.expectErr().expectUint(2003)
+
+        // Bug, this should pass -- to be checked
+        result = YTPTest.swapYForX(deployer, yieldwbtc59760Address, wbtcAddress, 100000);
+        position =result.expectErr().expectUint(5004)
+
+        // Attempt for Swapping
+        result = YTPTest.swapYForX(deployer, yieldwbtc59760Address, wbtcAddress, ONE_8);
+        position =result.expectOk().expectTuple();
+        position['dx'].expectUint(99787067);
+        position['dy'].expectUint(ONE_8);
+        
+        // Bug - to be checked
+        result = YTPTest.swapXForY(deployer, yieldwbtc59760Address, wbtcAddress, 0);
+        position =result.expectErr().expectUint(2003)
+
+        // Attempts to swap more than available balance in the pool
+        result = YTPTest.swapXForY(deployer, yieldwbtc59760Address, wbtcAddress, 100*ONE_8);
+        position =result.expectErr().expectUint(2016) 
+
+        // Swap
+        result = YTPTest.swapXForY(deployer, yieldwbtc59760Address, wbtcAddress, 10000000);
+        position =result.expectOk().expectTuple();
+        position['dx'].expectUint(10000000);
+        position['dy'].expectUint(10161454);
+
     },    
 });

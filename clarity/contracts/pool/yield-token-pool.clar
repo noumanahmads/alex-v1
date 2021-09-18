@@ -293,7 +293,9 @@
 )
 
 (define-public (swap-x-for-y (the-aytoken <yield-token-trait>) (the-token <ft-trait>) (dx uint))
-    
+    (begin
+        (asserts! (> dx u0) ERR-INVALID-LIQUIDITY) 
+
     (let
         (
             (aytoken (contract-of the-aytoken))
@@ -331,9 +333,11 @@
         (ok {dx: dx-net-fees, dy: dy})
     )
 )
+)
 
 (define-public (swap-y-for-x (the-aytoken <yield-token-trait>) (the-token <ft-trait>) (dy uint))
-
+    (begin 
+    (asserts! (> dy u0) ERR-INVALID-LIQUIDITY) 
     (let
         (
             (aytoken (contract-of the-aytoken))
@@ -347,7 +351,6 @@
             (dy-net-fees (unwrap! (mul-down dy lambda) ERR-MATH-CALL))
             (fee (unwrap! (sub-fixed dy dy-net-fees) ERR-MATH-CALL))
 
-            ;;(dx (unwrap! (get-x-given-y the-aytoken dy-net-fees) ERR-INTERNAL-FUNCTION-CALL))
             (dx (try! (get-x-given-y the-aytoken dy-net-fees)))
 
             (pool-updated
@@ -367,11 +370,11 @@
         (and (> dx u0) (unwrap! (contract-call? the-token transfer dx .alex-vault tx-sender none) ERR-TRANSFER-X-FAILED))
         (and (> dy u0) (unwrap! (contract-call? the-aytoken transfer dy tx-sender .alex-vault none) ERR-TRANSFER-Y-FAILED))
 
-        (print dy)
         ;; post setting
         (map-set pools-data-map { aytoken: aytoken } pool-updated)
         (print { object: "pool", action: "swap-y-for-x", data: pool-updated })
         (ok {dx: dx, dy: dy-net-fees})
+    )
     )
 )
 
