@@ -1,4 +1,5 @@
 (impl-trait .trait-ownable.ownable-trait)
+(impl-trait .trait-sip-010.sip-010-trait)
 (impl-trait .token-alex-trait.trait-token-alex)
 (use-trait coreTrait .token-alex-core-trait.trait-token-alex-core)
 
@@ -95,10 +96,10 @@
 (define-public (activate-token (coreContract principal) (stacksHeight uint))
   (let
     (
-      (coreContractMap (try! (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-auth get-core-contract-info coreContract)))
+      (coreContractMap (try! (contract-call? .token-alex-auth get-core-contract-info coreContract)))
     )
-    (asserts! (is-eq (get state coreContractMap) STATE_ACTIVE) (err ERR-NOT-AUTHORIZED))
-    (asserts! (not (var-get tokenActivated)) (err ERR_TOKEN_ALREADY_ACTIVATED))
+    (asserts! (is-eq (get state coreContractMap) STATE_ACTIVE) ERR-NOT-AUTHORIZED)
+    (asserts! (not (var-get tokenActivated)) ERR_TOKEN_ALREADY_ACTIVATED)
     (var-set tokenActivated true)
     (var-set coinbaseThreshold1 (+ stacksHeight TOKEN_HALVING_BLOCKS))
     (var-set coinbaseThreshold2 (+ stacksHeight (* u2 TOKEN_HALVING_BLOCKS)))
@@ -115,7 +116,7 @@
     (
       (activated (var-get tokenActivated))
     )
-    (asserts! activated (err ERR_TOKEN_NOT_ACTIVATED))
+    (asserts! activated ERR_TOKEN_NOT_ACTIVATED)
     (ok {
       coinbaseThreshold1: (var-get coinbaseThreshold1),
       coinbaseThreshold2: (var-get coinbaseThreshold2),
@@ -123,18 +124,6 @@
       coinbaseThreshold4: (var-get coinbaseThreshold4),
       coinbaseThreshold5: (var-get coinbaseThreshold5)
     })
-  )
-)
-
-;; UTILITIES
-
-(define-data-var tokenUri (optional (string-utf8 256)) (some u"https://cdn.citycoins.co/metadata/miamicoin.json"))
-
-;; set token URI to new value, only accessible by Auth
-(define-public (set-token-uri (newUri (optional (string-utf8 256))))
-  (begin
-    (asserts! (is-authorized-auth) (err ERR-NOT-AUTHORIZED))
-    (ok (var-set tokenUri newUri))
   )
 )
 

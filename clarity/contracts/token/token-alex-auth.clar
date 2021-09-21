@@ -1,25 +1,23 @@
-;; MIAMICOIN AUTH CONTRACT
-
 (define-constant CONTRACT_OWNER tx-sender)
 
 ;; TRAIT DEFINITIONS
 
-(use-trait coreTrait 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.citycoin-core-trait.citycoin-core)
-(use-trait tokenTrait 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.citycoin-token-trait.citycoin-token)
+(use-trait coreTrait .token-alex-core-trait.trait-token-alex-core)
+(use-trait tokenTrait .token-alex-trait.trait-token-alex)
 
 ;; ERRORS
 
-(define-constant ERR_UNKNOWN_JOB u6000)
-(define-constant ERR_UNAUTHORIZED u6001)
-(define-constant ERR_JOB_IS_ACTIVE u6002)
-(define-constant ERR_JOB_IS_NOT_ACTIVE u6003)
-(define-constant ERR_ALREADY_VOTED_THIS_WAY u6004)
-(define-constant ERR_JOB_IS_EXECUTED u6005)
-(define-constant ERR_JOB_IS_NOT_APPROVED u6006)
-(define-constant ERR_ARGUMENT_ALREADY_EXISTS u6007)
-(define-constant ERR_NO_ACTIVE_CORE_CONTRACT u6008)
-(define-constant ERR_CORE_CONTRACT_NOT_FOUND u6009)
-(define-constant ERR_UNKNOWN_ARGUMENT u6010)
+(define-constant ERR_UNKNOWN_JOB (err u9000))
+(define-constant ERR-NOT-AUTHORIZED (err u1001))
+(define-constant ERR_JOB_IS_ACTIVE (err u9002))
+(define-constant ERR_JOB_IS_NOT_ACTIVE (err u9003))
+(define-constant ERR_ALREADY_VOTED_THIS_WAY (err u9004))
+(define-constant ERR_JOB_IS_EXECUTED (err u9005))
+(define-constant ERR_JOB_IS_NOT_APPROVED (err u9006))
+(define-constant ERR_ARGUMENT_ALREADY_EXISTS (err u9007))
+(define-constant ERR_NO_ACTIVE_CORE_CONTRACT (err u9008))
+(define-constant ERR_CORE_CONTRACT_NOT_FOUND (err u9009))
+(define-constant ERR_UNKNOWN_ARGUMENT (err u9010))
 
 ;; JOB MANAGEMENT
 
@@ -86,7 +84,7 @@
     (
       (newJobId (+ (var-get lastJobId) u1))
     )
-    (asserts! (is-approver tx-sender) (err ERR_UNAUTHORIZED))
+    (asserts! (is-approver tx-sender) ERR-NOT-AUTHORIZED)
     (map-set Jobs
       newJobId
       {
@@ -111,10 +109,10 @@
 (define-public (activate-job (jobId uint))
   (let
     (
-      (job (unwrap! (get-job jobId) (err ERR_UNKNOWN_JOB)))
+      (job (unwrap! (get-job jobId) ERR_UNKNOWN_JOB))
     )
-    (asserts! (is-eq (get creator job) tx-sender) (err ERR_UNAUTHORIZED))
-    (asserts! (not (get isActive job)) (err ERR_JOB_IS_ACTIVE))
+    (asserts! (is-eq (get creator job) tx-sender) ERR-NOT-AUTHORIZED)
+    (asserts! (not (get isActive job)) ERR_JOB_IS_ACTIVE)
     (map-set Jobs 
       jobId
       (merge job { isActive: true })
@@ -126,11 +124,11 @@
 (define-public (approve-job (jobId uint))
   (let
     (
-      (job (unwrap! (get-job jobId) (err ERR_UNKNOWN_JOB)))
+      (job (unwrap! (get-job jobId) ERR_UNKNOWN_JOB))
       (previousVote (map-get? JobApprovers { jobId: jobId, approver: tx-sender }))
     )
-    (asserts! (get isActive job) (err ERR_JOB_IS_NOT_ACTIVE))
-    (asserts! (is-approver tx-sender) (err ERR_UNAUTHORIZED))
+    (asserts! (get isActive job) ERR_JOB_IS_NOT_ACTIVE)
+    (asserts! (is-approver tx-sender) ERR-NOT-AUTHORIZED)
     ;; save vote
     (map-set JobApprovers
       { jobId: jobId, approver: tx-sender }
@@ -138,7 +136,7 @@
     )
     (match previousVote approved
       (begin
-        (asserts! (not approved) (err ERR_ALREADY_VOTED_THIS_WAY))
+        (asserts! (not approved) ERR_ALREADY_VOTED_THIS_WAY)
         (map-set Jobs jobId
           (merge job 
             {
@@ -161,11 +159,11 @@
 (define-public (disapprove-job (jobId uint))
   (let
     (
-      (job (unwrap! (get-job jobId) (err ERR_UNKNOWN_JOB)))
+      (job (unwrap! (get-job jobId) ERR_UNKNOWN_JOB))
       (previousVote (map-get? JobApprovers { jobId: jobId, approver: tx-sender }))
     )
-    (asserts! (get isActive job) (err ERR_JOB_IS_NOT_ACTIVE))
-    (asserts! (is-approver tx-sender) (err ERR_UNAUTHORIZED))
+    (asserts! (get isActive job) ERR_JOB_IS_NOT_ACTIVE)
+    (asserts! (is-approver tx-sender) ERR-NOT-AUTHORIZED)
     ;; save vote
     (map-set JobApprovers
       { jobId: jobId, approver: tx-sender }
@@ -173,7 +171,7 @@
     )
     (match previousVote approved
       (begin
-        (asserts! approved (err ERR_ALREADY_VOTED_THIS_WAY))
+        (asserts! approved ERR_ALREADY_VOTED_THIS_WAY)
         (map-set Jobs jobId
           (merge job 
             {
@@ -203,12 +201,12 @@
 (define-public (mark-job-as-executed (jobId uint))
   (let
     (
-      (job (unwrap! (get-job jobId) (err ERR_UNKNOWN_JOB)))
+      (job (unwrap! (get-job jobId) ERR_UNKNOWN_JOB))
     )
-    (asserts! (get isActive job) (err ERR_JOB_IS_NOT_ACTIVE))
-    (asserts! (>= (get approvals job) REQUIRED_APPROVALS) (err ERR_JOB_IS_NOT_APPROVED))
-    (asserts! (is-eq (get target job) contract-caller) (err ERR_UNAUTHORIZED))
-    (asserts! (not (get isExecuted job)) (err ERR_JOB_IS_EXECUTED))
+    (asserts! (get isActive job) ERR_JOB_IS_NOT_ACTIVE)
+    (asserts! (>= (get approvals job) REQUIRED_APPROVALS) ERR_JOB_IS_NOT_APPROVED)
+    (asserts! (is-eq (get target job) contract-caller) ERR-NOT-AUTHORIZED)
+    (asserts! (not (get isExecuted job)) ERR_JOB_IS_EXECUTED)
     (map-set Jobs
       jobId
       (merge job { isExecuted: true })
@@ -234,7 +232,7 @@
           { argumentId: argumentId, value: value}
         )
       ) 
-      (err ERR_ARGUMENT_ALREADY_EXISTS)
+      ERR_ARGUMENT_ALREADY_EXISTS
     )
     (ok true)
   )
@@ -273,7 +271,7 @@
           { argumentId: argumentId, value: value}
         )
       ) 
-      (err ERR_ARGUMENT_ALREADY_EXISTS)
+      ERR_ARGUMENT_ALREADY_EXISTS
     )
     (ok true)
   )
@@ -318,10 +316,10 @@
 (define-private (guard-add-argument (jobId uint))
   (let
     (
-      (job (unwrap! (get-job jobId) (err ERR_UNKNOWN_JOB)))
+      (job (unwrap! (get-job jobId) ERR_UNKNOWN_JOB))
     )
-    (asserts! (not (get isActive job)) (err ERR_JOB_IS_ACTIVE))
-    (asserts! (is-eq (get creator job) contract-caller) (err ERR_UNAUTHORIZED))
+    (asserts! (not (get isActive job)) ERR_JOB_IS_ACTIVE)
+    (asserts! (is-eq (get creator job) contract-caller) ERR-NOT-AUTHORIZED)
     (ok true)
   )
 )
@@ -352,7 +350,7 @@
 ;; getter for active core contract
 (define-read-only (get-active-core-contract)
   (begin
-    (asserts! (not (is-eq (var-get activeCoreContract) CONTRACT_OWNER)) (err ERR_NO_ACTIVE_CORE_CONTRACT))
+    (asserts! (not (is-eq (var-get activeCoreContract) CONTRACT_OWNER)) ERR_NO_ACTIVE_CORE_CONTRACT)
     (ok (var-get activeCoreContract))
   )
 )
@@ -361,7 +359,7 @@
 (define-read-only (get-core-contract-info (targetContract principal))
   (let
     (
-      (coreContract (unwrap! (map-get? CoreContracts targetContract) (err ERR_CORE_CONTRACT_NOT_FOUND)))
+      (coreContract (unwrap! (map-get? CoreContracts targetContract) ERR_CORE_CONTRACT_NOT_FOUND))
     )
     (ok coreContract)
   )
@@ -378,8 +376,8 @@
     (
       (coreContractAddress (contract-of coreContract))
     )
-    (asserts! (is-eq contract-caller CONTRACT_OWNER) (err ERR_UNAUTHORIZED))
-    (asserts! (not (var-get initialized)) (err ERR_UNAUTHORIZED))
+    (asserts! (is-eq contract-caller CONTRACT_OWNER) ERR-NOT-AUTHORIZED)
+    (asserts! (not (var-get initialized)) ERR-NOT-AUTHORIZED)
     (map-set CoreContracts
       coreContractAddress
       {
@@ -405,9 +403,9 @@
 (define-public (activate-core-contract (targetContract principal) (stacksHeight uint))
   (let
     (
-      (coreContract (unwrap! (map-get? CoreContracts targetContract) (err ERR_CORE_CONTRACT_NOT_FOUND)))
+      (coreContract (unwrap! (map-get? CoreContracts targetContract) ERR_CORE_CONTRACT_NOT_FOUND))
     )
-    (asserts! (is-eq contract-caller targetContract) (err ERR_UNAUTHORIZED))
+    (asserts! (is-eq contract-caller targetContract) ERR-NOT-AUTHORIZED)
     (map-set CoreContracts
       targetContract
       {
@@ -425,11 +423,11 @@
   (let
     (
       (oldContractAddress (contract-of oldContract))
-      (oldContractMap (unwrap! (map-get? CoreContracts oldContractAddress) (err ERR_CORE_CONTRACT_NOT_FOUND)))
+      (oldContractMap (unwrap! (map-get? CoreContracts oldContractAddress) ERR_CORE_CONTRACT_NOT_FOUND))
       (newContractAddress (contract-of newContract))
     )
-    (asserts! (not (is-eq oldContractAddress newContractAddress)) (err ERR_UNAUTHORIZED))
-    (asserts! (is-authorized-city) (err ERR_UNAUTHORIZED))
+    (asserts! (not (is-eq oldContractAddress newContractAddress)) ERR-NOT-AUTHORIZED)
+    (asserts! (is-authorized-city) ERR-NOT-AUTHORIZED)
     (map-set CoreContracts
       oldContractAddress
       {
@@ -454,15 +452,15 @@
 (define-public (execute-upgrade-core-contract-job (jobId uint) (oldContract <coreTrait>) (newContract <coreTrait>))
   (let
     (
-      (oldContractArg (unwrap! (get-principal-value-by-name jobId "oldContract") (err ERR_UNKNOWN_ARGUMENT)))
-      (newContractArg (unwrap! (get-principal-value-by-name jobId "newContract") (err ERR_UNKNOWN_ARGUMENT)))
+      (oldContractArg (unwrap! (get-principal-value-by-name jobId "oldContract") ERR_UNKNOWN_ARGUMENT))
+      (newContractArg (unwrap! (get-principal-value-by-name jobId "newContract") ERR_UNKNOWN_ARGUMENT))
       (oldContractAddress (contract-of oldContract))
-      (oldContractMap (unwrap! (map-get? CoreContracts oldContractAddress) (err ERR_CORE_CONTRACT_NOT_FOUND)))
+      (oldContractMap (unwrap! (map-get? CoreContracts oldContractAddress) ERR_CORE_CONTRACT_NOT_FOUND))
       (newContractAddress (contract-of newContract))
     )
-    (asserts! (is-approver contract-caller) (err ERR_UNAUTHORIZED))
-    (asserts! (and (is-eq oldContractArg oldContractAddress) (is-eq newContractArg newContractAddress)) (err ERR_UNAUTHORIZED))
-    (asserts! (not (is-eq oldContractAddress newContractAddress)) (err ERR_UNAUTHORIZED))
+    (asserts! (is-approver contract-caller) ERR-NOT-AUTHORIZED)
+    (asserts! (and (is-eq oldContractArg oldContractAddress) (is-eq newContractArg newContractAddress)) ERR-NOT-AUTHORIZED)
+    (asserts! (not (is-eq oldContractAddress newContractAddress)) ERR-NOT-AUTHORIZED)
     (map-set CoreContracts
       oldContractAddress
       {
@@ -487,7 +485,7 @@
 ;; CITY WALLET MANAGEMENT
 
 ;; initial value for city wallet
-(define-data-var cityWallet principal 'SM2MARAVW6BEJCD13YV2RHGYHQWT7TDDNMNRB1MVT)
+(define-data-var cityWallet principal .alex-reserve-pool)
 
 ;; returns city wallet principal
 (define-read-only (get-city-wallet)
@@ -499,10 +497,10 @@
   (let
     (
       (coreContractAddress (contract-of targetContract))
-      (coreContract (unwrap! (map-get? CoreContracts coreContractAddress) (err ERR_CORE_CONTRACT_NOT_FOUND)))
+      (coreContract (unwrap! (map-get? CoreContracts coreContractAddress) ERR_CORE_CONTRACT_NOT_FOUND))
     )
-    (asserts! (is-authorized-city) (err ERR_UNAUTHORIZED))
-    (asserts! (is-eq coreContractAddress (var-get activeCoreContract)) (err ERR_UNAUTHORIZED))
+    (asserts! (is-authorized-city) ERR-NOT-AUTHORIZED)
+    (asserts! (is-eq coreContractAddress (var-get activeCoreContract)) ERR-NOT-AUTHORIZED)
     (var-set cityWallet newCityWallet)
     (try! (contract-call? targetContract set-city-wallet newCityWallet))
     (ok true)
@@ -513,11 +511,11 @@
   (let
     (
       (coreContractAddress (contract-of targetContract))
-      (coreContract (unwrap! (map-get? CoreContracts coreContractAddress) (err ERR_CORE_CONTRACT_NOT_FOUND)))
-      (newCityWallet (unwrap! (get-principal-value-by-name jobId "newCityWallet") (err ERR_UNKNOWN_ARGUMENT)))
+      (coreContract (unwrap! (map-get? CoreContracts coreContractAddress) ERR_CORE_CONTRACT_NOT_FOUND))
+      (newCityWallet (unwrap! (get-principal-value-by-name jobId "newCityWallet") ERR_UNKNOWN_ARGUMENT))
     )
-    (asserts! (is-approver contract-caller) (err ERR_UNAUTHORIZED))
-    (asserts! (is-eq coreContractAddress (var-get activeCoreContract)) (err ERR_UNAUTHORIZED))
+    (asserts! (is-approver contract-caller) ERR-NOT-AUTHORIZED)
+    (asserts! (is-eq coreContractAddress (var-get activeCoreContract)) ERR-NOT-AUTHORIZED)
     (var-set cityWallet newCityWallet)
     (try! (contract-call? targetContract set-city-wallet newCityWallet))
     (as-contract (mark-job-as-executed jobId))
@@ -531,9 +529,9 @@
 
 ;; TOKEN MANAGEMENT
 
-(define-public (set-token-uri (targetContract <tokenTrait>) (newUri (optional (string-utf8 256))))
+(define-public (set-token-uri (targetContract <tokenTrait>) (newUri (string-utf8 256)))
   (begin
-    (asserts! (is-authorized-city) (err ERR_UNAUTHORIZED))
+    (asserts! (is-authorized-city) ERR-NOT-AUTHORIZED)
     (as-contract (try! (contract-call? targetContract set-token-uri newUri)))
     (ok true)
   )
@@ -544,10 +542,10 @@
 (define-public (execute-replace-approver-job (jobId uint))
   (let
     (
-      (oldApprover (unwrap! (get-principal-value-by-name jobId "oldApprover") (err ERR_UNKNOWN_ARGUMENT)))
-      (newApprover (unwrap! (get-principal-value-by-name jobId "newApprover") (err ERR_UNKNOWN_ARGUMENT)))
+      (oldApprover (unwrap! (get-principal-value-by-name jobId "oldApprover") ERR_UNKNOWN_ARGUMENT))
+      (newApprover (unwrap! (get-principal-value-by-name jobId "newApprover") ERR_UNKNOWN_ARGUMENT))
     )
-    (asserts! (is-approver contract-caller) (err ERR_UNAUTHORIZED))
+    (asserts! (is-approver contract-caller) ERR-NOT-AUTHORIZED)
     (map-set Approvers oldApprover false)
     (map-set Approvers newApprover true)
     (as-contract (mark-job-as-executed jobId))

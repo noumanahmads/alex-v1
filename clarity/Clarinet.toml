@@ -50,10 +50,6 @@ depends_on = ["math-fixed-point"]
 path = "contracts/equations/yield-token-equation.clar"
 depends_on = ["math-fixed-point"]
 
-[contracts.token-alex]
-path = "contracts/token/token-alex.clar"
-depends_on = ["trait-pool-token", "trait-ownable"]
-
 [contracts.token-usda]
 path = "contracts/token/token-usda.clar"
 depends_on = ["trait-pool-token", "trait-ownable"]
@@ -145,3 +141,29 @@ depends_on = ["yield-wbtc-79760", "key-wbtc-79760-usda", "token-wbtc", "token-us
 [contracts.stacked-poxl-pool]
 path = "contracts/pool/stacked-poxl-pool.clar"
 depends_on = []
+
+[contracts.token-alex-vrf]
+path = "contracts/token/token-alex-vrf.clar"
+depends_on = []
+
+[contracts.token-alex-core-trait]
+path = "contracts/token/token-alex-core-trait.clar"
+depends_on = []
+
+[contracts.token-alex-trait]
+path = "contracts/token/token-alex-trait.clar"
+depends_on = []
+
+[contracts.token-alex-auth]
+path = "contracts/token/token-alex-auth.clar"
+depends_on = ["token-alex-core-trait", "token-alex-trait"]
+
+[contracts.token-alex]
+path = "contracts/token/token-alex.clar"
+depends_on = ["trait-ownable", "trait-sip-010", "token-alex-auth", "token-alex-trait"]
+
+[contracts.token-alex-core-v1]
+path = "contracts/token/token-alex-core-v1.clar"
+depends_on = ["token-alex-auth", "token-alex", "token-alex-vrf", "token-alex-core-trait"]
+
+

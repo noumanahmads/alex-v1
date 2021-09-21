@@ -5,7 +5,7 @@
       (response bool uint)
     )
 
-    (set-token-uri ((optional (string-utf8 256)))
+    (set-token-uri ((string-utf8 256))
       (response bool uint)
     )
 

@@ -1,38 +1,36 @@
-;; MIAMICOIN CORE CONTRACT
-
 ;; GENERAL CONFIGURATION
 
-(impl-trait 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.citycoin-core-trait.citycoin-core)
+(impl-trait .token-alex-core-trait.trait-token-alex-core)
 (define-constant CONTRACT_OWNER tx-sender)
 
 ;; ERROR CODES
 
-(define-constant ERR_UNAUTHORIZED u1000)
-(define-constant ERR_USER_ALREADY_REGISTERED u1001)
-(define-constant ERR_USER_NOT_FOUND u1002)
-(define-constant ERR_USER_ID_NOT_FOUND u1003)
-(define-constant ERR_ACTIVATION_THRESHOLD_REACHED u1004)
-(define-constant ERR_CONTRACT_NOT_ACTIVATED u1005)
-(define-constant ERR_USER_ALREADY_MINED u1006)
-(define-constant ERR_INSUFFICIENT_COMMITMENT u1007)
-(define-constant ERR_INSUFFICIENT_BALANCE u1008)
-(define-constant ERR_USER_DID_NOT_MINE_IN_BLOCK u1009)
-(define-constant ERR_CLAIMED_BEFORE_MATURITY u1010)
-(define-constant ERR_NO_MINERS_AT_BLOCK u1011)
-(define-constant ERR_REWARD_ALREADY_CLAIMED u1012)
-(define-constant ERR_MINER_DID_NOT_WIN u1013)
-(define-constant ERR_NO_VRF_SEED_FOUND u1014)
-(define-constant ERR_STACKING_NOT_AVAILABLE u1015)
-(define-constant ERR_CANNOT_STACK u1016)
-(define-constant ERR_REWARD_CYCLE_NOT_COMPLETED u1017)
-(define-constant ERR_NOTHING_TO_REDEEM u1018)
-(define-constant ERR_UNABLE_TO_FIND_CITY_WALLET u1019)
-(define-constant ERR_CLAIM_IN_WRONG_CONTRACT u1020)
+(define-constant ERR-NOT-AUTHORIZED (err u1000))
+(define-constant ERR_USER_ALREADY_REGISTERED (err u10001))
+(define-constant ERR_USER_NOT_FOUND (err u10002))
+(define-constant ERR_USER_ID_NOT_FOUND (err u10003))
+(define-constant ERR_ACTIVATION_THRESHOLD_REACHED (err u10004))
+(define-constant ERR_CONTRACT_NOT_ACTIVATED (err u10005))
+(define-constant ERR_USER_ALREADY_MINED (err u10006))
+(define-constant ERR_INSUFFICIENT_COMMITMENT (err u10007))
+(define-constant ERR_INSUFFICIENT_BALANCE (err u10008))
+(define-constant ERR_USER_DID_NOT_MINE_IN_BLOCK (err u10009))
+(define-constant ERR_CLAIMED_BEFORE_MATURITY (err u10010))
+(define-constant ERR_NO_MINERS_AT_BLOCK (err u10011))
+(define-constant ERR_REWARD_ALREADY_CLAIMED (err u10012))
+(define-constant ERR_MINER_DID_NOT_WIN (err u10013))
+(define-constant ERR_NO_VRF_SEED_FOUND (err u10014))
+(define-constant ERR_STACKING_NOT_AVAILABLE (err u10015))
+(define-constant ERR_CANNOT_STACK (err u10016))
+(define-constant ERR_REWARD_CYCLE_NOT_COMPLETED (err u10017))
+(define-constant ERR_NOTHING_TO_REDEEM (err u10018))
+(define-constant ERR_UNABLE_TO_FIND_CITY_WALLET (err u10019))
+(define-constant ERR_CLAIM_IN_WRONG_CONTRACT (err u10020))
 
 ;; CITY WALLET MANAGEMENT
 
 ;; initial value for city wallet, set to this contract until initialized
-(define-data-var cityWallet principal 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-core-v1)
+(define-data-var cityWallet principal .alex-reserve-pool)
 
 ;; returns set city wallet principal
 (define-read-only (get-city-wallet)
@@ -42,7 +40,7 @@
 ;; protected function to update city wallet variable
 (define-public (set-city-wallet (newCityWallet principal))
   (begin
-    (asserts! (is-authorized-auth) (err ERR_UNAUTHORIZED))
+    (asserts! (is-authorized-auth) ERR-NOT-AUTHORIZED)
     (ok (var-set cityWallet newCityWallet))
   )
 )
@@ -61,7 +59,7 @@
     (
       (activated (var-get activationReached))
     )
-    (asserts! activated (err ERR_CONTRACT_NOT_ACTIVATED))
+    (asserts! activated ERR_CONTRACT_NOT_ACTIVATED)
     (ok (var-get activationBlock))
   )
 )
@@ -131,16 +129,16 @@
     (
       (newId (+ u1 (var-get usersNonce)))
       (threshold (var-get activationThreshold))
-      (initialized (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-auth is-initialized))
+      (initialized (contract-call? .token-alex-auth is-initialized))
     )
 
-    (asserts! initialized (err ERR_UNAUTHORIZED))
+    (asserts! initialized ERR-NOT-AUTHORIZED)
 
     (asserts! (is-none (map-get? UserIds tx-sender))
-      (err ERR_USER_ALREADY_REGISTERED))
+      ERR_USER_ALREADY_REGISTERED)
 
     (asserts! (<= newId threshold)
-      (err ERR_ACTIVATION_THRESHOLD_REACHED))
+      ERR_ACTIVATION_THRESHOLD_REACHED)
 
     (if (is-some memo)
       (print memo)
@@ -154,8 +152,8 @@
         (
           (activationBlockVal (+ block-height (var-get activationDelay)))
         )
-        (try! (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-auth activate-core-contract (as-contract tx-sender) activationBlockVal))
-        (try! (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-token activate-token (as-contract tx-sender) activationBlockVal))
+        (try! (contract-call? .token-alex-auth activate-core-contract (as-contract tx-sender) activationBlockVal))
+        (try! (contract-call? .token-alex activate-token (as-contract tx-sender) activationBlockVal))
         (try! (set-coinbase-thresholds))
         (var-set activationReached true)
         (var-set activationBlock activationBlockVal)
@@ -288,12 +286,12 @@
 
 (define-public (mine-many (amounts (list 200 uint)))
   (begin
-    (asserts! (get-activation-status) (err ERR_CONTRACT_NOT_ACTIVATED))
-    (asserts! (> (len amounts) u0) (err ERR_INSUFFICIENT_COMMITMENT))
+    (asserts! (get-activation-status) ERR_CONTRACT_NOT_ACTIVATED)
+    (asserts! (> (len amounts) u0) ERR_INSUFFICIENT_COMMITMENT)
     (match (fold mine-single amounts (ok { userId: (get-or-create-user-id tx-sender), toStackers: u0, toCity: u0, stacksHeight: block-height }))
       okReturn 
       (begin
-        (asserts! (>= (stx-get-balance tx-sender) (+ (get toStackers okReturn) (get toCity okReturn))) (err ERR_INSUFFICIENT_BALANCE))
+        (asserts! (>= (stx-get-balance tx-sender) (+ (get toStackers okReturn) (get toCity okReturn))) ERR_INSUFFICIENT_BALANCE)
         (if (> (get toStackers okReturn ) u0)
           (try! (stx-transfer? (get toStackers okReturn ) tx-sender (as-contract tx-sender)))
           false
@@ -332,8 +330,8 @@
         )
         (toStackers (- amountUstx toCity))
       )
-      (asserts! (not (has-mined-at-block stacksHeight (get userId okReturn))) (err ERR_USER_ALREADY_MINED))
-      (asserts! (> amountUstx u0) (err ERR_INSUFFICIENT_COMMITMENT))
+      (asserts! (not (has-mined-at-block stacksHeight (get userId okReturn))) ERR_USER_ALREADY_MINED)
+      (asserts! (> amountUstx u0) ERR_INSUFFICIENT_COMMITMENT)
       (try! (set-tokens-mined (get userId okReturn) stacksHeight amountUstx toStackers toCity))
       (ok (merge okReturn 
         {
@@ -360,10 +358,10 @@
       )
       (toStackers (- amountUstx toCity))
     )
-    (asserts! (get-activation-status) (err ERR_CONTRACT_NOT_ACTIVATED))
-    (asserts! (not (has-mined-at-block stacksHeight userId)) (err ERR_USER_ALREADY_MINED))
-    (asserts! (> amountUstx u0) (err ERR_INSUFFICIENT_COMMITMENT))
-    (asserts! (>= (stx-get-balance tx-sender) amountUstx) (err ERR_INSUFFICIENT_BALANCE))
+    (asserts! (get-activation-status) ERR_CONTRACT_NOT_ACTIVATED)
+    (asserts! (not (has-mined-at-block stacksHeight userId)) ERR_USER_ALREADY_MINED)
+    (asserts! (> amountUstx u0) ERR_INSUFFICIENT_COMMITMENT)
+    (asserts! (>= (stx-get-balance tx-sender) amountUstx) ERR_INSUFFICIENT_BALANCE)
     (try! (set-tokens-mined userId stacksHeight amountUstx toStackers toCity))
     (if (is-some memo)
       (print memo)
@@ -385,7 +383,7 @@
       (newMinersCount (+ (get minersCount blockStats) u1))
       (minerLowVal (get-last-high-value-at-block stacksHeight))
       (rewardCycle (unwrap! (get-reward-cycle stacksHeight)
-        (err ERR_STACKING_NOT_AVAILABLE)))
+        ERR_STACKING_NOT_AVAILABLE))
       (rewardCycleStats (get-stacking-stats-at-cycle-or-default rewardCycle))
     )
     (map-set MiningStatsAtBlock
@@ -433,7 +431,7 @@
 ;; calls function to claim mining reward in active logic contract
 (define-public (claim-mining-reward (minerBlockHeight uint))
   (begin
-    (asserts! (or (is-eq (var-get shutdownHeight) u0) (< minerBlockHeight (var-get shutdownHeight))) (err ERR_CLAIM_IN_WRONG_CONTRACT))
+    (asserts! (or (is-eq (var-get shutdownHeight) u0) (< minerBlockHeight (var-get shutdownHeight))) ERR_CLAIM_IN_WRONG_CONTRACT)
     (try! (claim-mining-reward-at-block tx-sender block-height minerBlockHeight))
     (ok true)
   )
@@ -445,17 +443,17 @@
   (let
     (
       (maturityHeight (+ (var-get tokenRewardMaturity) minerBlockHeight))
-      (userId (unwrap! (get-user-id user) (err ERR_USER_ID_NOT_FOUND)))
-      (blockStats (unwrap! (get-mining-stats-at-block minerBlockHeight) (err ERR_NO_MINERS_AT_BLOCK)))
-      (minerStats (unwrap! (get-miner-at-block minerBlockHeight userId) (err ERR_USER_DID_NOT_MINE_IN_BLOCK)))
-      (isMature (asserts! (> stacksHeight maturityHeight) (err ERR_CLAIMED_BEFORE_MATURITY)))
-      (vrfSample (unwrap! (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.citycoin-vrf get-random-uint-at-block maturityHeight) (err ERR_NO_VRF_SEED_FOUND)))
+      (userId (unwrap! (get-user-id user) ERR_USER_ID_NOT_FOUND))
+      (blockStats (unwrap! (get-mining-stats-at-block minerBlockHeight) ERR_NO_MINERS_AT_BLOCK))
+      (minerStats (unwrap! (get-miner-at-block minerBlockHeight userId) ERR_USER_DID_NOT_MINE_IN_BLOCK))
+      (isMature (asserts! (> stacksHeight maturityHeight) ERR_CLAIMED_BEFORE_MATURITY))
+      (vrfSample (unwrap! (contract-call? .token-alex-vrf get-random-uint-at-block maturityHeight) ERR_NO_VRF_SEED_FOUND))
       (commitTotal (get-last-high-value-at-block minerBlockHeight))
       (winningValue (mod vrfSample commitTotal))
     )
-    (asserts! (not (get rewardClaimed blockStats)) (err ERR_REWARD_ALREADY_CLAIMED))
+    (asserts! (not (get rewardClaimed blockStats)) ERR_REWARD_ALREADY_CLAIMED)
     (asserts! (and (>= winningValue (get lowValue minerStats)) (<= winningValue (get highValue minerStats)))
-      (err ERR_MINER_DID_NOT_WIN))
+      ERR_MINER_DID_NOT_WIN)
     (try! (set-mining-reward-claimed userId minerBlockHeight))
     (ok true)
   )
@@ -466,7 +464,7 @@
     (
       (blockStats (get-mining-stats-at-block-or-default minerBlockHeight))
       (minerStats (get-miner-at-block-or-default minerBlockHeight userId))
-      (user (unwrap! (get-user userId) (err ERR_USER_NOT_FOUND)))
+      (user (unwrap! (get-user userId) ERR_USER_NOT_FOUND))
     )
     (map-set MiningStatsAtBlock
       minerBlockHeight
@@ -514,7 +512,7 @@
       (blockStats (unwrap! (get-mining-stats-at-block minerBlockHeight) false))
       (minerStats (unwrap! (get-miner-at-block minerBlockHeight userId) false))
       (maturityHeight (+ (var-get tokenRewardMaturity) minerBlockHeight))
-      (vrfSample (unwrap! (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.citycoin-vrf get-random-uint-at-block maturityHeight) false))
+      (vrfSample (unwrap! (contract-call? .token-alex-vrf get-random-uint-at-block maturityHeight) false))
       (commitTotal (get-last-high-value-at-block minerBlockHeight))
       (winningValue (mod vrfSample commitTotal))
     )
@@ -656,7 +654,7 @@
 (define-private (stack-tokens-at-cycle (user principal) (userId uint) (amountTokens uint) (startHeight uint) (lockPeriod uint))
   (let
     (
-      (currentCycle (unwrap! (get-reward-cycle startHeight) (err ERR_STACKING_NOT_AVAILABLE)))
+      (currentCycle (unwrap! (get-reward-cycle startHeight) ERR_STACKING_NOT_AVAILABLE))
       (targetCycle (+ u1 currentCycle))
       (commitment {
         stackerId: userId,
@@ -665,11 +663,11 @@
         last: (+ targetCycle lockPeriod)
       })
     )
-    (asserts! (get-activation-status) (err ERR_CONTRACT_NOT_ACTIVATED))
+    (asserts! (get-activation-status) ERR_CONTRACT_NOT_ACTIVATED)
     (asserts! (and (> lockPeriod u0) (<= lockPeriod MAX_REWARD_CYCLES))
-      (err ERR_CANNOT_STACK))
-    (asserts! (> amountTokens u0) (err ERR_CANNOT_STACK))
-    (try! (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-token transfer amountTokens tx-sender (as-contract tx-sender) none))
+      ERR_CANNOT_STACK)
+    (asserts! (> amountTokens u0) ERR_CANNOT_STACK)
+    (try! (contract-call? .token-alex transfer amountTokens tx-sender (as-contract tx-sender) none))
     (match (fold stack-tokens-closure REWARD_CYCLE_INDEXES (ok commitment))
       okValue (ok true)
       errValue (err errValue)
@@ -758,8 +756,8 @@
 (define-private (claim-stacking-reward-at-cycle (user principal) (stacksHeight uint) (targetCycle uint))
   (let
     (
-      (currentCycle (unwrap! (get-reward-cycle stacksHeight) (err ERR_STACKING_NOT_AVAILABLE)))
-      (userId (unwrap! (get-user-id user) (err ERR_USER_ID_NOT_FOUND)))
+      (currentCycle (unwrap! (get-reward-cycle stacksHeight) ERR_STACKING_NOT_AVAILABLE))
+      (userId (unwrap! (get-user-id user) ERR_USER_ID_NOT_FOUND))
       (entitledUstx (get-entitled-stacking-reward userId targetCycle stacksHeight))
       (stackerAtCycle (get-stacker-at-cycle-or-default targetCycle userId))
       (toReturn (get toReturn stackerAtCycle))
@@ -767,8 +765,8 @@
     (asserts! (or
       (is-eq true (var-get isShutdown))
       (> currentCycle targetCycle))
-      (err ERR_REWARD_CYCLE_NOT_COMPLETED))
-    (asserts! (or (> toReturn u0) (> entitledUstx u0)) (err ERR_NOTHING_TO_REDEEM))
+      ERR_REWARD_CYCLE_NOT_COMPLETED)
+    (asserts! (or (> toReturn u0) (> entitledUstx u0)) ERR_NOTHING_TO_REDEEM)
     ;; disable ability to claim again
     (map-set StackerAtCycle
       {
@@ -782,7 +780,7 @@
     )
     ;; send back tokens if user was eligible
     (if (> toReturn u0)
-      (try! (as-contract (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-token transfer toReturn tx-sender user none)))
+      (try! (as-contract (contract-call? .token-alex transfer toReturn tx-sender user none)))
       true
     )
     ;; send back rewards if user was eligible
@@ -806,7 +804,7 @@
 (define-private (set-coinbase-thresholds)
   (let
     (
-      (coinbaseAmounts (try! (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-token get-coinbase-thresholds)))
+      (coinbaseAmounts (try! (contract-call? .token-alex get-coinbase-thresholds)))
     )
     (var-set coinbaseThreshold1 (get coinbaseThreshold1 coinbaseAmounts))
     (var-set coinbaseThreshold2 (get coinbaseThreshold2 coinbaseAmounts))
@@ -823,7 +821,7 @@
     (
       (activated (var-get activationReached))
     )
-    (asserts! activated (err ERR_CONTRACT_NOT_ACTIVATED))
+    (asserts! activated ERR_CONTRACT_NOT_ACTIVATED)
     (ok {
       coinbaseThreshold1: (var-get coinbaseThreshold1),
       coinbaseThreshold2: (var-get coinbaseThreshold2),
@@ -862,7 +860,7 @@
 
 ;; mint new tokens for claimant who won at given Stacks block height
 (define-private (mint-coinbase (recipient principal) (stacksHeight uint))
-  (as-contract (contract-call? 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-token mint (get-coinbase-amount stacksHeight) recipient))
+  (as-contract (contract-call? .token-alex mint recipient (get-coinbase-amount stacksHeight)))
 )
 
 ;; UTILITIES
@@ -875,7 +873,7 @@
 (define-public (shutdown-contract (stacksHeight uint))
   (begin
     ;; only allow shutdown request from AUTH
-    (asserts! (is-authorized-auth) (err ERR_UNAUTHORIZED))
+    (asserts! (is-authorized-auth) ERR-NOT-AUTHORIZED)
     ;; set variables to disable mining/stacking in CORE
     (var-set activationReached false)
     (var-set shutdownHeight stacksHeight)
@@ -897,5 +895,5 @@
 
 ;; checks if caller is Auth contract
 (define-private (is-authorized-auth)
-  (is-eq contract-caller 'SP466FNC0P7JWTNM2R9T199QRZN1MYEDTAR0KP27.miamicoin-auth)
+  (is-eq contract-caller .token-alex-auth)
 )
