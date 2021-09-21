@@ -141,3 +141,7 @@ depends_on = ["yield-wbtc-59760", "key-wbtc-59760-usda", "token-wbtc", "token-us
 [contracts.multisig-crp-wbtc-79760-usda]
 path = "contracts/multisig/multisig-crp-wbtc-79760-usda.clar"
 depends_on = ["yield-wbtc-79760", "key-wbtc-79760-usda", "token-wbtc", "token-usda", "trait-sip-010"]
+
+[contracts.stacked-poxl-pool]
+path = "contracts/pool/stacked-poxl-pool.clar"
+depends_on = []

@@ -39,11 +39,11 @@ async function run(){
 
     //Need to call it one by one, or you'll receive 'ConflictingNonceInMempool' Error
 
-    // const {usdc, btc} = await initCoinPrice()
+    const {usdc, btc} = await initCoinPrice()
     // await setOpenOracle('WBTC','nothing', btc);
     // await setOpenOracle('USDA','nothing', usdc);
-    // await getOpenOracle('nothing', 'WBTC');
-    // await getOpenOracle('nothing', 'USDA');
+    await getOpenOracle('nothing', 'WBTC');
+    await getOpenOracle('nothing', 'USDA');
 
     // await crpGetLtv('token-wbtc', 'token-usda', 59760e+8);
     // await crpGetPoolValueInToken('token-wbtc', 'token-usda', 59760e+8);
@@ -60,16 +60,15 @@ async function run(){
     // await fwpGetXgivenY('token-wbtc', 'token-usda', weightX, weightY, 10000e+8);
 
     await crpGetPoolDetails('token-wbtc', 'token-usda', expiry);
-    await crpGetXgivenY('token-wbtc', 'token-usda', expiry, 1e+8);
-    await crpGetYgivenX('token-wbtc', 'token-usda', expiry, 10000e+8);
+    // await crpGetXgivenY('token-wbtc', 'token-usda', expiry, 1e+8);
+    // await crpGetYgivenX('token-wbtc', 'token-usda', expiry, 10000e+8);
 
     // await ytpGetPoolDetails('yield-wbtc-59760');
     // await ytpGetXgivenY('yield-wbtc-59760', 1e+8);
     // await ytpGetYgivenX('yield-wbtc-59760', 1e+8);
 
-    // await crpGetLtv('token-wbtc', 'token-usda', expiry);
-    // await crpGetPoolValueInToken('token-wbtc', 'token-usda', expiry);
-    // await crpGetPoolDetails('token-wbtc', 'token-usda', expiry);
+    await crpGetLtv('token-wbtc', 'token-usda', expiry);
+    await crpGetPoolValueInToken('token-wbtc', 'token-usda', expiry);
     await crpGetWeightY('token-wbtc', 'token-usda',  expiry, 4846200000000, 80e+7);
 }
 run();
