@@ -7,17 +7,17 @@
 
 ;; ERRORS
 
+(define-constant ERR-NOT-AUTHORIZED (err u1000))
 (define-constant ERR_UNKNOWN_JOB (err u9000))
-(define-constant ERR-NOT-AUTHORIZED (err u1001))
-(define-constant ERR_JOB_IS_ACTIVE (err u9002))
-(define-constant ERR_JOB_IS_NOT_ACTIVE (err u9003))
-(define-constant ERR_ALREADY_VOTED_THIS_WAY (err u9004))
-(define-constant ERR_JOB_IS_EXECUTED (err u9005))
-(define-constant ERR_JOB_IS_NOT_APPROVED (err u9006))
-(define-constant ERR_ARGUMENT_ALREADY_EXISTS (err u9007))
-(define-constant ERR_NO_ACTIVE_CORE_CONTRACT (err u9008))
-(define-constant ERR_CORE_CONTRACT_NOT_FOUND (err u9009))
-(define-constant ERR_UNKNOWN_ARGUMENT (err u9010))
+(define-constant ERR_JOB_IS_ACTIVE (err u9001))
+(define-constant ERR_JOB_IS_NOT_ACTIVE (err u9002))
+(define-constant ERR_ALREADY_VOTED_THIS_WAY (err u9003))
+(define-constant ERR_JOB_IS_EXECUTED (err u9004))
+(define-constant ERR_JOB_IS_NOT_APPROVED (err u9005))
+(define-constant ERR_ARGUMENT_ALREADY_EXISTS (err u9006))
+(define-constant ERR_NO_ACTIVE_CORE_CONTRACT (err u9007))
+(define-constant ERR_CORE_CONTRACT_NOT_FOUND (err u9008))
+(define-constant ERR_UNKNOWN_ARGUMENT (err u9009))
 
 ;; JOB MANAGEMENT
 
@@ -485,7 +485,7 @@
 ;; CITY WALLET MANAGEMENT
 
 ;; initial value for city wallet
-(define-data-var cityWallet principal .alex-reserve-pool)
+(define-data-var cityWallet principal .token-alex-core-v1)
 
 ;; returns city wallet principal
 (define-read-only (get-city-wallet)
@@ -552,10 +552,40 @@
   )
 )
 
-;; CONTRACT INITIALIZATION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; FUNCTIONS ONLY USED DURING TESTS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(map-insert Approvers 'SP372JVX6EWE2M0XPA84MWZYRRG2M6CAC4VVC12V1 true)
-(map-insert Approvers 'SP2R0DQYR7XHD161SH2GK49QRP1YSV7HE9JSG7W6G true)
-(map-insert Approvers 'SPN4Y5QPGQA8882ZXW90ADC2DHYXMSTN8VAR8C3X true)
-(map-insert Approvers 'SP3YYGCGX1B62CYAH4QX7PQE63YXG7RDTXD8BQHJQ true)
-(map-insert Approvers 'SP7DGES13508FHRWS1FB0J3SZA326FP6QRMB6JDE true)
+(define-public (test-initialize-contracts (coreContract <coreTrait>))
+  (let
+    (
+      (coreContractAddress (contract-of coreContract))
+    )
+    ;; (asserts! (is-eq contract-caller CONTRACT_OWNER) (err ERR-NOT-AUTHORIZED))
+    (asserts! (not (var-get initialized)) ERR-NOT-AUTHORIZED)
+    (map-set CoreContracts
+      coreContractAddress
+      {
+        state: STATE_DEPLOYED,
+        startHeight: u0,
+        endHeight: u0
+      })
+    (try! (contract-call? coreContract set-city-wallet (var-get cityWallet)))
+    (var-set initialized true)
+    (ok true)
+  )
+)
+
+(define-public (test-set-active-core-contract)
+  (ok (var-set activeCoreContract .token-alex-core-v1))
+)
+
+;; ;; CONTRACT INITIALIZATION
+
+;; (map-insert Approvers 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE true) ;; deployer
+(map-insert Approvers 'ST1J4G6RR643BCG8G8SR6M2D9Z9KXT2NJDRK3FBTK true) ;; wallet_1
+(map-insert Approvers 'ST20ATRN26N9P05V2F1RHFRV24X8C8M3W54E427B2 true) ;; wallet_2
+(map-insert Approvers 'ST21HMSJATHZ888PD0S0SSTWP4J61TCRJYEVQ0STB true) ;; wallet_3
+(map-insert Approvers 'ST2QXSK64YQX3CQPC530K79XWQ98XFAM9W3XKEH3N true) ;; wallet_4
+(map-insert Approvers 'ST3DG3R65C9TTEEW5BC5XTSY0M1JM7NBE7GVWKTVJ true)
+

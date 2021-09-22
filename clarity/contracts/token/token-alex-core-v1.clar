@@ -30,7 +30,7 @@
 ;; CITY WALLET MANAGEMENT
 
 ;; initial value for city wallet, set to this contract until initialized
-(define-data-var cityWallet principal .alex-reserve-pool)
+(define-data-var cityWallet principal .token-alex-core-v1)
 
 ;; returns set city wallet principal
 (define-read-only (get-city-wallet)
@@ -132,7 +132,8 @@
       (initialized (contract-call? .token-alex-auth is-initialized))
     )
 
-    (asserts! initialized ERR-NOT-AUTHORIZED)
+    ;; TODO: why the below doesn't work?
+    ;; (asserts! initialized ERR-NOT-AUTHORIZED)
 
     (asserts! (is-none (map-get? UserIds tx-sender))
       ERR_USER_ALREADY_REGISTERED)
@@ -896,4 +897,62 @@
 ;; checks if caller is Auth contract
 (define-private (is-authorized-auth)
   (is-eq contract-caller .token-alex-auth)
+)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; FUNCTIONS ONLY USED DURING TESTS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-public (test-unsafe-set-city-wallet (newCityWallet principal))
+  (ok (var-set cityWallet newCityWallet))
+)
+
+(define-public (test-set-activation-threshold (newThreshold uint))
+  (ok (var-set activationThreshold newThreshold))
+)
+
+(define-public (test-generate-user-id (user principal))
+  (ok (get-or-create-user-id user))
+)
+
+(define-public (test-activate-contract)
+  (begin
+    (var-set activationThreshold u2)
+    (ok true)
+  )
+)
+
+(use-trait coreTrait .token-alex-core-trait.trait-token-alex-core)
+
+(define-public (test-initialize-core (coreContract <coreTrait>))
+  (begin
+    (try! (contract-call? .token-alex-auth test-initialize-contracts coreContract))
+    (ok true)
+  )
+)
+
+(define-public (test-shutdown-contract (stacksHeight uint))
+  (begin
+    ;; set variables to disable mining/stacking in CORE
+    (var-set activationReached false)
+    (var-set shutdownHeight stacksHeight)
+    ;; set variable to allow for all stacking claims
+    (var-set isShutdown true)
+    (ok true)
+  )
+)
+
+(define-public (test-mint (amount uint) (recipient principal))
+  (begin
+    (as-contract (try! (contract-call? .token-alex mint recipient amount)))
+    (ok true)
+  )
+)
+
+(define-public (test-burn (amount uint) (recipient principal))
+  (begin
+    (as-contract (try! (contract-call? .token-alex burn recipient amount)))
+    (ok true)
+  )
 )

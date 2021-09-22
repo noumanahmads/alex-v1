@@ -180,6 +180,19 @@
   )
 )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; FUNCTIONS ONLY USED DURING TESTS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-public (test-mint (amount uint) (recipient principal))
+  (ft-mint? alex amount recipient)
+)
+
+(define-public (test-set-token-activation)
+  (ok (var-set tokenActivated true))
+)
+
+
 ;; Initialize the contract for Testing.
 (begin
   (try! (ft-mint? alex u1000000000000 tx-sender))
