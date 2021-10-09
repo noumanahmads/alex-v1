@@ -462,13 +462,6 @@ async function arbitrage_crp(dry_run=true){
             } else {
                 let dy = await crpGetYgivenPrice(_deploy[key]['token'], _deploy[key]['collateral'], _deploy[key]['expiry'], Math.round(printed * ONE_8));
 
-<<<<<<< HEAD
-    const {usdc, btc} = await initCoinPrice()
-    // await setOpenOracle('WBTC','nothing', btc);
-    // await setOpenOracle('USDA','nothing', usdc);
-    await getOpenOracle('nothing', 'WBTC');
-    await getOpenOracle('nothing', 'USDA');
-=======
                 if(dy.type === 7 && dy.value.value > 0n){
                     let dx = await crpGetXgivenY(_deploy[key]['token'], _deploy[key]['collateral'], _deploy[key]['expiry'], dy.value.value);
                     if(dx.type == 7){
@@ -588,7 +581,6 @@ async function test_spot_trading(){
     console.log(timestamp());    
     let wbtcPrice = (await getOpenOracle('coingecko', 'WBTC')).value.value;  
     let usdaPrice = (await getOpenOracle('coingecko', 'USDA')).value.value;   
->>>>>>> dev
 
     let from_amount = ONE_8;
     let to_amount = parseInt((await fwpGetYgivenX('token-wbtc', 'token-usda', 0.5e+8, 0.5e+8, from_amount)).value.value);
@@ -781,18 +773,12 @@ async function run(){
     // await create_crp(add_only=true);     
     // await create_ytp(add_only=true);
 
-<<<<<<< HEAD
-    await crpGetPoolDetails('token-wbtc', 'token-usda', expiry);
-    // await crpGetXgivenY('token-wbtc', 'token-usda', expiry, 1e+8);
-    // await crpGetYgivenX('token-wbtc', 'token-usda', expiry, 10000e+8);
-=======
     await arbitrage_fwp(dry_run=true);
     await arbitrage_crp(dry_run=true);    
     await arbitrage_ytp(dry_run=true); 
     await get_pool_details_fwp();
     await get_pool_details_crp();
     await get_pool_details_ytp();   
->>>>>>> dev
 
     // await reduce_position_ytp(0.9*ONE_8);
     // await reduce_position_crp(ONE_8, 'yield');
@@ -804,16 +790,10 @@ async function run(){
     // await see_balance(process.env.DEPLOYER_ACCOUNT_ADDRESS + '.alex-vault');        
     // await see_balance(process.env.USER_ACCOUNT_ADDRESS);        
 
-<<<<<<< HEAD
-    await crpGetLtv('token-wbtc', 'token-usda', expiry);
-    await crpGetPoolValueInToken('token-wbtc', 'token-usda', expiry);
-    await crpGetWeightY('token-wbtc', 'token-usda',  expiry, 4846200000000, 80e+7);
-=======
     // for(const key in _white_list){
     //     await get_some_token(_white_list[key]);
     //     // await burn('token-wbtc', _white_list[key], 5);
     //     // await burn('token-usda', _white_list[key], 500000e+6);
     // }
->>>>>>> dev
 }
 run();

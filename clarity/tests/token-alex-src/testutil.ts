@@ -1,7 +1,6 @@
 import { Account, Chain, Tx, it } from "./deps.ts";
 import { TokenClient } from "./token-client.ts";
 import { CoreClient } from "./core-client.ts";
-import { AuthClient } from "./auth-client.ts";
 import { TestUtilsClient } from "./test-utils-client.ts";
 
 class Accounts extends Map<string, Account> {}
@@ -9,7 +8,6 @@ class Accounts extends Map<string, Account> {}
 interface Clients {
   token: TokenClient;
   core: CoreClient;
-  auth: AuthClient;
   testUtils: TestUtilsClient;
 }
 
@@ -42,7 +40,6 @@ function _it(
     deployer = accounts.get("deployer")!;
     clients = {
       token: new TokenClient("token-alex", chain, deployer),
-      auth: new AuthClient("token-alex-auth", chain, deployer),
       core: new CoreClient("token-alex-core-v1", chain, deployer),
       testUtils: new TestUtilsClient("test-utils", chain, deployer),
     };

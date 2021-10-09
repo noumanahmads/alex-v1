@@ -29,21 +29,7 @@
 
 ;; CITY WALLET MANAGEMENT
 
-;; initial value for city wallet, set to this contract until initialized
-(define-data-var cityWallet principal .token-alex-core-v1)
-
-;; returns set city wallet principal
-(define-read-only (get-city-wallet)
-  (var-get cityWallet)
-)
- 
-;; protected function to update city wallet variable
-(define-public (set-city-wallet (newCityWallet principal))
-  (begin
-    (asserts! (is-authorized-auth) ERR-NOT-AUTHORIZED)
-    (ok (var-set cityWallet newCityWallet))
-  )
-)
+(define-constant cityWallet .alex-reserve-pool)
 
 ;; REGISTRATION
 
@@ -129,7 +115,6 @@
     (
       (newId (+ u1 (var-get usersNonce)))
       (threshold (var-get activationThreshold))
-      (initialized (contract-call? .token-alex-auth is-initialized))
     )
 
     ;; TODO: why the below doesn't work?
@@ -153,9 +138,6 @@
         (
           (activationBlockVal (+ block-height (var-get activationDelay)))
         )
-        (try! (contract-call? .token-alex-auth activate-core-contract (as-contract tx-sender) activationBlockVal))
-        (try! (contract-call? .token-alex activate-token (as-contract tx-sender) activationBlockVal))
-        (try! (set-coinbase-thresholds))
         (var-set activationReached true)
         (var-set activationBlock activationBlockVal)
         (ok true)
@@ -297,7 +279,7 @@
           (try! (stx-transfer? (get toStackers okReturn ) tx-sender (as-contract tx-sender)))
           false
         )
-        (try! (stx-transfer? (get toCity okReturn) tx-sender (var-get cityWallet)))
+        (try! (stx-transfer? (get toCity okReturn) tx-sender cityWallet))
         (ok true)
       )
       errReturn (err errReturn)
@@ -372,7 +354,7 @@
       (try! (stx-transfer? toStackers tx-sender (as-contract tx-sender)))
       false
     )
-    (try! (stx-transfer? toCity tx-sender (var-get cityWallet)))
+    (try! (stx-transfer? toCity tx-sender cityWallet))
     (ok true)
   )
 )
@@ -432,7 +414,6 @@
 ;; calls function to claim mining reward in active logic contract
 (define-public (claim-mining-reward (minerBlockHeight uint))
   (begin
-    (asserts! (or (is-eq (var-get shutdownHeight) u0) (< minerBlockHeight (var-get shutdownHeight))) ERR_CLAIM_IN_WRONG_CONTRACT)
     (try! (claim-mining-reward-at-block tx-sender block-height minerBlockHeight))
     (ok true)
   )
@@ -763,10 +744,7 @@
       (stackerAtCycle (get-stacker-at-cycle-or-default targetCycle userId))
       (toReturn (get toReturn stackerAtCycle))
     )
-    (asserts! (or
-      (is-eq true (var-get isShutdown))
-      (> currentCycle targetCycle))
-      ERR_REWARD_CYCLE_NOT_COMPLETED)
+    (asserts! (> currentCycle targetCycle) ERR_REWARD_CYCLE_NOT_COMPLETED)
     (asserts! (or (> toReturn u0) (> entitledUstx u0)) ERR_NOTHING_TO_REDEEM)
     ;; disable ability to claim again
     (map-set StackerAtCycle
@@ -801,20 +779,6 @@
 (define-data-var coinbaseThreshold3 uint u0)
 (define-data-var coinbaseThreshold4 uint u0)
 (define-data-var coinbaseThreshold5 uint u0)
-
-(define-private (set-coinbase-thresholds)
-  (let
-    (
-      (coinbaseAmounts (try! (contract-call? .token-alex get-coinbase-thresholds)))
-    )
-    (var-set coinbaseThreshold1 (get coinbaseThreshold1 coinbaseAmounts))
-    (var-set coinbaseThreshold2 (get coinbaseThreshold2 coinbaseAmounts))
-    (var-set coinbaseThreshold3 (get coinbaseThreshold3 coinbaseAmounts))
-    (var-set coinbaseThreshold4 (get coinbaseThreshold4 coinbaseAmounts))
-    (var-set coinbaseThreshold5 (get coinbaseThreshold5 coinbaseAmounts))
-    (ok true)
-  )
-)
 
 ;; return coinbase thresholds if contract activated
 (define-read-only (get-coinbase-thresholds)
@@ -864,29 +828,9 @@
   (as-contract (contract-call? .token-alex mint recipient (get-coinbase-amount stacksHeight)))
 )
 
-;; UTILITIES
-
-(define-data-var shutdownHeight uint u0)
-(define-data-var isShutdown bool false)
-
-;; stop mining and stacking operations
-;; in preparation for a core upgrade
-(define-public (shutdown-contract (stacksHeight uint))
-  (begin
-    ;; only allow shutdown request from AUTH
-    (asserts! (is-authorized-auth) ERR-NOT-AUTHORIZED)
-    ;; set variables to disable mining/stacking in CORE
-    (var-set activationReached false)
-    (var-set shutdownHeight stacksHeight)
-    ;; set variable to allow for all stacking claims
-    (var-set isShutdown true)
-    (ok true)
-  )
-)
-
 ;; check if contract caller is city wallet
 (define-private (is-authorized-city)
-  (is-eq contract-caller (var-get cityWallet))
+  (is-eq contract-caller cityWallet)
 )
 
 ;; check if contract caller is contract owner
@@ -894,19 +838,10 @@
   (is-eq contract-caller CONTRACT_OWNER)
 )
 
-;; checks if caller is Auth contract
-(define-private (is-authorized-auth)
-  (is-eq contract-caller .token-alex-auth)
-)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FUNCTIONS ONLY USED DURING TESTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define-public (test-unsafe-set-city-wallet (newCityWallet principal))
-  (ok (var-set cityWallet newCityWallet))
-)
 
 (define-public (test-set-activation-threshold (newThreshold uint))
   (ok (var-set activationThreshold newThreshold))
@@ -919,26 +854,6 @@
 (define-public (test-activate-contract)
   (begin
     (var-set activationThreshold u2)
-    (ok true)
-  )
-)
-
-(use-trait coreTrait .token-alex-core-trait.trait-token-alex-core)
-
-(define-public (test-initialize-core (coreContract <coreTrait>))
-  (begin
-    (try! (contract-call? .token-alex-auth test-initialize-contracts coreContract))
-    (ok true)
-  )
-)
-
-(define-public (test-shutdown-contract (stacksHeight uint))
-  (begin
-    ;; set variables to disable mining/stacking in CORE
-    (var-set activationReached false)
-    (var-set shutdownHeight stacksHeight)
-    ;; set variable to allow for all stacking claims
-    (var-set isShutdown true)
     (ok true)
   )
 )
