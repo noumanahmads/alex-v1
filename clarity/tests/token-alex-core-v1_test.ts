@@ -190,7 +190,7 @@ describe("[CityCoin Core]", () => {
         const miner2 = accounts.get("wallet_3")!;
         const amount = 2;
         const setupBlock = chain.mineBlock([
-          clients.core.unsafeSetActivationThreshold(0),
+          clients.core.unsafeSetActivationThreshold(1),
           clients.core.registerUser(miner),
           clients.core.registerUser(miner2),
         ]);
@@ -205,7 +205,7 @@ describe("[CityCoin Core]", () => {
         ]);
         chain.mineEmptyBlock(CoreClient.TOKEN_REWARD_MATURITY);
         chain.mineBlock([
-          clients.core.claimMiningReward(block.height - 1, miner),
+          clients.core.claimMiningReward(block.height - 1, miner2),
         ]);
         // act
         const result = clients.core.getBlockWinnerId(block.height - 1).result;

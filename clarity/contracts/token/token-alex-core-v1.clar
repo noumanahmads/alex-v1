@@ -120,9 +120,6 @@
       (threshold (var-get activationThreshold))
     )
 
-    ;; TODO: why the below doesn't work?
-    ;; (asserts! initialized ERR-NOT-AUTHORIZED)
-
     (asserts! (is-none (map-get? UserIds tx-sender))
       ERR_USER_ALREADY_REGISTERED)
 
