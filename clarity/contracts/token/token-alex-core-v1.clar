@@ -3,6 +3,8 @@
 (impl-trait .token-alex-core-trait.trait-token-alex-core)
 (define-constant CONTRACT_OWNER tx-sender)
 
+(define-constant ONE_8 (pow u10 u8))
+
 ;; ERROR CODES
 
 (define-constant ERR-NOT-AUTHORIZED (err u1000))
@@ -26,6 +28,7 @@
 (define-constant ERR_NOTHING_TO_REDEEM (err u10018))
 (define-constant ERR_UNABLE_TO_FIND_CITY_WALLET (err u10019))
 (define-constant ERR_CLAIM_IN_WRONG_CONTRACT (err u10020))
+(define-constant ERR_UNABLE_TO_SET_THRESHOLD (err u10021))
 
 ;; CITY WALLET MANAGEMENT
 
@@ -33,7 +36,7 @@
 
 ;; REGISTRATION
 
-(define-data-var activationBlock uint u340282366920938463463374607431768211455)
+(define-data-var activationBlock uint u1000000)
 (define-data-var activationDelay uint u150)
 (define-data-var activationReached bool false)
 (define-data-var activationThreshold uint u20)
@@ -140,6 +143,7 @@
         )
         (var-set activationReached true)
         (var-set activationBlock activationBlockVal)
+        (unwrap! (set-coinbase-thresholds activationBlockVal) ERR_UNABLE_TO_SET_THRESHOLD)
         (ok true)
       )
       (ok true)
@@ -649,7 +653,7 @@
     (asserts! (and (> lockPeriod u0) (<= lockPeriod MAX_REWARD_CYCLES))
       ERR_CANNOT_STACK)
     (asserts! (> amountTokens u0) ERR_CANNOT_STACK)
-    (try! (contract-call? .token-alex transfer amountTokens tx-sender (as-contract tx-sender) none))
+    (try! (contract-call? .token-alex transfer (* amountTokens ONE_8) tx-sender (as-contract tx-sender) none))
     (match (fold stack-tokens-closure REWARD_CYCLE_INDEXES (ok commitment))
       okValue (ok true)
       errValue (err errValue)
@@ -759,7 +763,7 @@
     )
     ;; send back tokens if user was eligible
     (if (> toReturn u0)
-      (try! (as-contract (contract-call? .token-alex transfer toReturn tx-sender user none)))
+      (try! (as-contract (contract-call? .token-alex transfer (* toReturn ONE_8) tx-sender user none)))
       true
     )
     ;; send back rewards if user was eligible
@@ -773,6 +777,8 @@
 
 ;; TOKEN CONFIGURATION
 
+(define-constant TOKEN_HALVING_BLOCKS u210000)
+
 ;; store block height at each halving, set by register-user in core contract
 (define-data-var coinbaseThreshold1 uint u0)
 (define-data-var coinbaseThreshold2 uint u0)
@@ -780,6 +786,16 @@
 (define-data-var coinbaseThreshold4 uint u0)
 (define-data-var coinbaseThreshold5 uint u0)
 
+(define-private (set-coinbase-thresholds (activationBlockVal uint))
+  (begin
+    (var-set coinbaseThreshold1 (+ activationBlockVal TOKEN_HALVING_BLOCKS))
+    (var-set coinbaseThreshold2 (+ activationBlockVal (* u2 TOKEN_HALVING_BLOCKS)))
+    (var-set coinbaseThreshold3 (+ activationBlockVal (* u3 TOKEN_HALVING_BLOCKS)))
+    (var-set coinbaseThreshold4 (+ activationBlockVal (* u4 TOKEN_HALVING_BLOCKS)))
+    (var-set coinbaseThreshold5 (+ activationBlockVal (* u5 TOKEN_HALVING_BLOCKS)))
+    (ok true)
+  )
+)
 ;; return coinbase thresholds if contract activated
 (define-read-only (get-coinbase-thresholds)
   (let
@@ -825,7 +841,7 @@
 
 ;; mint new tokens for claimant who won at given Stacks block height
 (define-private (mint-coinbase (recipient principal) (stacksHeight uint))
-  (as-contract (contract-call? .token-alex mint recipient (get-coinbase-amount stacksHeight)))
+  (as-contract (contract-call? .token-alex mint recipient (* (get-coinbase-amount stacksHeight) ONE_8)))
 )
 
 ;; check if contract caller is city wallet
@@ -860,14 +876,14 @@
 
 (define-public (test-mint (amount uint) (recipient principal))
   (begin
-    (as-contract (try! (contract-call? .token-alex mint recipient amount)))
+    (as-contract (try! (contract-call? .token-alex mint recipient (* amount ONE_8))))
     (ok true)
   )
 )
 
 (define-public (test-burn (amount uint) (recipient principal))
   (begin
-    (as-contract (try! (contract-call? .token-alex burn recipient amount)))
+    (as-contract (try! (contract-call? .token-alex burn recipient (* amount ONE_8))))
     (ok true)
   )
 )

@@ -4,155 +4,155 @@ import { it } from "./token-alex-src/testutil.ts";
 
 describe("[CityCoin Core]", () => {
 
-  // //////////////////////////////////////////////////
-  // // REGISTRATION
-  // //////////////////////////////////////////////////
-
-  // describe("REGISTRATION", () => {
-  //   describe("get-activation-block()", () => {
-  //     it("throws ERR_CONTRACT_NOT_ACTIVATED if called before contract is activated", (chain, accounts, clients) => {
-  //       // act
-  //       const result = clients.core.getActivationBlock().result;
-
-  //       // assert
-  //       result
-  //         .expectErr()
-  //         .expectUint(CoreClient.ErrCode.ERR_CONTRACT_NOT_ACTIVATED);
-  //     });
-  //     it("succeeds and returns activation height", (chain, accounts, clients) => {
-  //       // arrange
-  //       const user = accounts.get("wallet_4")!;
-  //       const block = chain.mineBlock([
-  //         clients.core.unsafeSetActivationThreshold(1),
-  //         clients.core.registerUser(user),
-  //       ]);
-  //       const activationBlockHeight =
-  //         block.height + CoreClient.ACTIVATION_DELAY - 1;
-
-  //       // act
-  //       const result = clients.core.getActivationBlock().result;
-
-  //       // assert
-  //       result.expectOk().expectUint(activationBlockHeight);
-  //     });
-  //   });
-  //   describe("get-activation-delay()", () => {
-  //     it("succeeds and returns activation delay", (chain, accounts, clients) => {
-  //       // act
-  //       const result = clients.core.getActivationDelay().result;
-  //       // assert
-  //       result.expectUint(CoreClient.ACTIVATION_DELAY);
-  //     });
-  //   });
-  //   describe("get-activation-threshold()", () => {
-  //     it("succeeds and returns activation threshold", (chain, accounts, clients) => {
-  //       // act
-  //       const result = clients.core.getActivationThreshold().result;
-  //       // assert
-  //       result.expectUint(CoreClient.ACTIVATION_THRESHOLD);
-  //     });
-  //   });
-  //   describe("get-registered-users-nonce()", () => {
-  //     it("succeeds and returns u0 if no users are registered", (chain, accounts, clients) => {
-  //       // act
-  //       const result = clients.core.getRegisteredUsersNonce().result;
-  //       // assert
-  //       result.expectUint(0);
-  //     });
-  //     it("succeeds and returns u1 if one user is registered", (chain, accounts, clients) => {
-  //       // arrange
-  //       const user = accounts.get("wallet_5")!;
-  //       const receipt = chain.mineBlock([clients.core.registerUser(user)]).receipts[0];
-  //       receipt.result.expectOk().expectBool(true);
-
-  //       // act
-  //       const result = clients.core.getRegisteredUsersNonce().result;
-  //       // assert
-  //       result.expectUint(1);
-  //     });
-  //   });
-  //   describe("register-user()", () => {
-  //     it("successfully register new user and emits print event with memo when supplied", (chain, accounts, clients) => {
-  //       // arrange
-  //       const user = accounts.get("wallet_5")!;
-  //       const memo = "hello world";
-
-  //       // act
-  //       const receipt = chain.mineBlock([clients.core.registerUser(user, memo)])
-  //         .receipts[0];
-
-  //       // assert
-  //       receipt.result.expectOk().expectBool(true);
-  //       clients.core.getUserId(user).result.expectSome().expectUint(1);
-
-  //       assertEquals(receipt.events.length, 1);
-
-  //       const expectedEvent = {
-  //         type: "contract_event",
-  //         contract_event: {
-  //           contract_identifier: clients.core.getContractAddress(),
-  //           topic: "print",
-  //           value: types.some(types.utf8(memo)),
-  //         },
-  //       };
-
-  //       assertEquals(receipt.events[0], expectedEvent);
-  //     });
-
-  //     it("successfully register new user and do not emit any events when memo is not supplied", (chain, accounts, clients) => {
-  //       // arrange
-  //       const user = accounts.get("wallet_4")!;
-
-  //       // act
-  //       const receipt = chain.mineBlock([clients.core.registerUser(user)])
-  //         .receipts[0];
-
-  //       // assert
-  //       receipt.result.expectOk().expectBool(true);
-  //       clients.core.getUserId(user).result.expectSome().expectUint(1);
-
-  //       assertEquals(receipt.events.length, 0);
-  //     });
-
-  //     it("throws ERR_USER_ALREADY_REGISTERED while trying to register user 2nd time", (chain, accounts, clients) => {
-  //       // arrange
-  //       const user = accounts.get("wallet_4")!;
-  //       const registerUserTx = clients.core.registerUser(user);
-  //       chain.mineBlock([registerUserTx]);
-
-  //       // act
-  //       const receipt = chain.mineBlock([registerUserTx]).receipts[0];
-
-  //       // assert
-  //       receipt.result
-  //         .expectErr()
-  //         .expectUint(CoreClient.ErrCode.ERR_USER_ALREADY_REGISTERED);
-  //     });
-
-  //     it("throws ERR_ACTIVATION_THRESHOLD_REACHED error when user wants to register after reaching activation threshold", (chain, accounts, clients) => {
-  //       // arrange
-  //       const user1 = accounts.get("wallet_4")!;
-  //       const user2 = accounts.get("wallet_5")!;
-  //       chain.mineBlock([
-  //         clients.core.unsafeSetActivationThreshold(1),
-  //         clients.core.registerUser(user1),
-  //       ]);
-
-  //       // act
-  //       const receipt = chain.mineBlock([clients.core.registerUser(user2)])
-  //         .receipts[0];
-
-  //       // assert
-  //       receipt.result
-  //         .expectErr()
-  //         .expectUint(CoreClient.ErrCode.ERR_ACTIVATION_THRESHOLD_REACHED);
-  //     });
-  //   });
-  // });
-
   //////////////////////////////////////////////////
+  // REGISTRATION
+  //////////////////////////////////////////////////
+
+  describe("REGISTRATION", () => {
+    describe("get-activation-block()", () => {
+      it("throws ERR_CONTRACT_NOT_ACTIVATED if called before contract is activated", (chain, accounts, clients) => {
+        // act
+        const result = clients.core.getActivationBlock().result;
+
+        // assert
+        result
+          .expectErr()
+          .expectUint(CoreClient.ErrCode.ERR_CONTRACT_NOT_ACTIVATED);
+      });
+      it("succeeds and returns activation height", (chain, accounts, clients) => {
+        // arrange
+        const user = accounts.get("wallet_4")!;
+        const block = chain.mineBlock([
+          clients.core.unsafeSetActivationThreshold(1),
+          clients.core.registerUser(user),
+        ]);
+        const activationBlockHeight =
+          block.height + CoreClient.ACTIVATION_DELAY - 1;
+
+        // act
+        const result = clients.core.getActivationBlock().result;
+
+        // assert
+        result.expectOk().expectUint(activationBlockHeight);
+      });
+    });
+    describe("get-activation-delay()", () => {
+      it("succeeds and returns activation delay", (chain, accounts, clients) => {
+        // act
+        const result = clients.core.getActivationDelay().result;
+        // assert
+        result.expectUint(CoreClient.ACTIVATION_DELAY);
+      });
+    });
+    describe("get-activation-threshold()", () => {
+      it("succeeds and returns activation threshold", (chain, accounts, clients) => {
+        // act
+        const result = clients.core.getActivationThreshold().result;
+        // assert
+        result.expectUint(CoreClient.ACTIVATION_THRESHOLD);
+      });
+    });
+    describe("get-registered-users-nonce()", () => {
+      it("succeeds and returns u0 if no users are registered", (chain, accounts, clients) => {
+        // act
+        const result = clients.core.getRegisteredUsersNonce().result;
+        // assert
+        result.expectUint(0);
+      });
+      it("succeeds and returns u1 if one user is registered", (chain, accounts, clients) => {
+        // arrange
+        const user = accounts.get("wallet_5")!;
+        const receipt = chain.mineBlock([clients.core.registerUser(user)]).receipts[0];
+        receipt.result.expectOk().expectBool(true);
+
+        // act
+        const result = clients.core.getRegisteredUsersNonce().result;
+        // assert
+        result.expectUint(1);
+      });
+    });
+    describe("register-user()", () => {
+      it("successfully register new user and emits print event with memo when supplied", (chain, accounts, clients) => {
+        // arrange
+        const user = accounts.get("wallet_5")!;
+        const memo = "hello world";
+
+        // act
+        const receipt = chain.mineBlock([clients.core.registerUser(user, memo)])
+          .receipts[0];
+
+        // assert
+        receipt.result.expectOk().expectBool(true);
+        clients.core.getUserId(user).result.expectSome().expectUint(1);
+
+        assertEquals(receipt.events.length, 1);
+
+        const expectedEvent = {
+          type: "contract_event",
+          contract_event: {
+            contract_identifier: clients.core.getContractAddress(),
+            topic: "print",
+            value: types.some(types.utf8(memo)),
+          },
+        };
+
+        assertEquals(receipt.events[0], expectedEvent);
+      });
+
+      it("successfully register new user and do not emit any events when memo is not supplied", (chain, accounts, clients) => {
+        // arrange
+        const user = accounts.get("wallet_4")!;
+
+        // act
+        const receipt = chain.mineBlock([clients.core.registerUser(user)])
+          .receipts[0];
+
+        // assert
+        receipt.result.expectOk().expectBool(true);
+        clients.core.getUserId(user).result.expectSome().expectUint(1);
+
+        assertEquals(receipt.events.length, 0);
+      });
+
+      it("throws ERR_USER_ALREADY_REGISTERED while trying to register user 2nd time", (chain, accounts, clients) => {
+        // arrange
+        const user = accounts.get("wallet_4")!;
+        const registerUserTx = clients.core.registerUser(user);
+        chain.mineBlock([registerUserTx]);
+
+        // act
+        const receipt = chain.mineBlock([registerUserTx]).receipts[0];
+
+        // assert
+        receipt.result
+          .expectErr()
+          .expectUint(CoreClient.ErrCode.ERR_USER_ALREADY_REGISTERED);
+      });
+
+      it("throws ERR_ACTIVATION_THRESHOLD_REACHED error when user wants to register after reaching activation threshold", (chain, accounts, clients) => {
+        // arrange
+        const user1 = accounts.get("wallet_4")!;
+        const user2 = accounts.get("wallet_5")!;
+        chain.mineBlock([
+          clients.core.unsafeSetActivationThreshold(1),
+          clients.core.registerUser(user1),
+        ]);
+
+        // act
+        const receipt = chain.mineBlock([clients.core.registerUser(user2)])
+          .receipts[0];
+
+        // assert
+        receipt.result
+          .expectErr()
+          .expectUint(CoreClient.ErrCode.ERR_ACTIVATION_THRESHOLD_REACHED);
+      });
+    });
+  });
+
+  // ////////////////////////////////////////////////
   // MINING CONFIGURATION
-  //////////////////////////////////////////////////
+  // ////////////////////////////////////////////////
 
   describe("MINING CONFIGURATION", () => {
     describe("get-block-winner-id()", () => {
@@ -190,7 +190,7 @@ describe("[CityCoin Core]", () => {
         const miner2 = accounts.get("wallet_3")!;
         const amount = 2;
         const setupBlock = chain.mineBlock([
-          clients.core.unsafeSetActivationThreshold(1),
+          clients.core.unsafeSetActivationThreshold(0),
           clients.core.registerUser(miner),
           clients.core.registerUser(miner2),
         ]);
@@ -211,7 +211,6 @@ describe("[CityCoin Core]", () => {
         const result = clients.core.getBlockWinnerId(block.height - 1).result;
 
         // assert
-        console.log(block.height);
         result.expectSome().expectUint(2);
       });
     });
@@ -304,12 +303,10 @@ describe("[CityCoin Core]", () => {
 
       it("succeeds and cause one stx_transfer_event to city-wallet during first cycle", (chain, accounts, clients) => {
         // arrange
-        const cityWallet = accounts.get("city_wallet")!;
+        const deployer = accounts.get("deployer")!;
         const miner = accounts.get("wallet_2")!;
         const amountUstx = 200;
         const block = chain.mineBlock([
-
-          clients.core.unsafeSetCityWallet(cityWallet),
           clients.core.unsafeSetActivationThreshold(1),
           clients.core.registerUser(miner),
         ]);
@@ -328,19 +325,19 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectSTXTransferEvent(
           amountUstx,
           miner.address,
-          cityWallet.address
+          deployer.address + '.alex-reserve-pool'
         );
       });
 
       it("succeeds and cause one stx_transfer event to city-wallet and one to stacker while mining in cycle with stackers", (chain, accounts, clients) => {
         // arrange
-        const cityWallet = accounts.get("city_wallet")!;
+        const deployer = accounts.get("deployer")!;        
         const miner = accounts.get("wallet_2")!;
         const amountUstx = 200;
         const amountTokens = 500;
         const block = chain.mineBlock([
 
-          clients.core.unsafeSetCityWallet(cityWallet),
+
           clients.token.ftMint(amountTokens, miner),
           clients.core.unsafeSetActivationThreshold(1),
           clients.core.registerUser(miner),
@@ -367,7 +364,7 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectSTXTransferEvent(
           amountUstx * CoreClient.SPLIT_CITY_PCT,
           miner.address,
-          cityWallet.address
+          deployer.address + '.alex-reserve-pool'
         );
 
         receipt.events.expectSTXTransferEvent(
@@ -596,9 +593,10 @@ describe("[CityCoin Core]", () => {
 
       it("succeeds and cause one STX transfer event when amounts list have only one value and there are no stackers", (chain, accounts, clients) => {
         // arrange
+        const deployer = accounts.get("deployer")!;        
         const miner = accounts.get("wallet_1")!;
         const amounts = [1];
-        const cityWallet = accounts.get("city_wallet")!;
+        
         const setupBlock = chain.mineBlock([
 
           clients.core.unsafeSetActivationThreshold(1),
@@ -620,15 +618,16 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectSTXTransferEvent(
           amounts.reduce((sum, amount) => sum + amount, 0),
           miner.address,
-          cityWallet.address
+          deployer.address + '.alex-reserve-pool'
         );
       });
 
       it("succeeds and cause one STX transfer event when amounts list have multiple values and there are no stackers", (chain, accounts, clients) => {
         // arrange
+        const deployer = accounts.get("deployer")!;        
         const miner = accounts.get("wallet_1")!;
         const amounts = [1, 2, 200, 89, 3423];
-        const cityWallet = accounts.get("city_wallet")!;
+        
         const setupBlock = chain.mineBlock([
 
           clients.core.unsafeSetActivationThreshold(1),
@@ -650,19 +649,20 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectSTXTransferEvent(
           amounts.reduce((sum, amount) => sum + amount, 0),
           miner.address,
-          cityWallet.address
+          deployer.address + '.alex-reserve-pool'
         );
       });
 
       it("succeeds and cause 2 stx transfers when amounts list have only one value and there is at least one stacker", (chain, accounts, clients) => {
         // arrange
+        const deployer = accounts.get("deployer")!;        
         const miner = accounts.get("wallet_1")!;
         const amounts = [10000];
-        const cityWallet = accounts.get("city_wallet")!;
+        
         const amountTokens = 500;
         const block = chain.mineBlock([
 
-          clients.core.unsafeSetCityWallet(cityWallet),
+
           clients.token.ftMint(amountTokens, miner),
           clients.core.unsafeSetActivationThreshold(1),
           clients.core.registerUser(miner),
@@ -691,7 +691,7 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectSTXTransferEvent(
           totalAmount * CoreClient.SPLIT_CITY_PCT,
           miner.address,
-          cityWallet.address
+          deployer.address + '.alex-reserve-pool'
         );
 
         receipt.events.expectSTXTransferEvent(
@@ -703,13 +703,14 @@ describe("[CityCoin Core]", () => {
 
       it("succeeds and cause 2 stx transfers when amounts list have multiple values and there is at least one stacker", (chain, accounts, clients) => {
         // arrange
+        const deployer = accounts.get("deployer")!;        
         const miner = accounts.get("wallet_1")!;
         const amounts = [100, 200, 300];
-        const cityWallet = accounts.get("city_wallet")!;
+        
         const amountTokens = 500;
         const block = chain.mineBlock([
 
-          clients.core.unsafeSetCityWallet(cityWallet),
+
           clients.token.ftMint(amountTokens, miner),
           clients.core.unsafeSetActivationThreshold(1),
           clients.core.registerUser(miner),
@@ -738,7 +739,7 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectSTXTransferEvent(
           totalAmount * CoreClient.SPLIT_CITY_PCT,
           miner.address,
-          cityWallet.address
+          deployer.address + '.alex-reserve-pool'
         );
 
         receipt.events.expectSTXTransferEvent(
@@ -957,11 +958,10 @@ describe("[CityCoin Core]", () => {
         receipt.result.expectOk().expectBool(true);
 
         assertEquals(receipt.events.length, 1);
-
         receipt.events.expectFungibleTokenMintEvent(
           250000,
           miner.address,
-          "citycoins"
+          "alex"
         );
       });
 
@@ -997,7 +997,7 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectFungibleTokenMintEvent(
           100000,
           miner.address,
-          "citycoins"
+          "alex"
         );
       });
 
@@ -1033,7 +1033,7 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectFungibleTokenMintEvent(
           50000,
           miner.address,
-          "citycoins"
+          "alex"
         );
       });
 
@@ -1069,7 +1069,7 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectFungibleTokenMintEvent(
           25000,
           miner.address,
-          "citycoins"
+          "alex"
         );
       });
 
@@ -1105,7 +1105,7 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectFungibleTokenMintEvent(
           12500,
           miner.address,
-          "citycoins"
+          "alex"
         );
       });
 
@@ -1141,7 +1141,7 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectFungibleTokenMintEvent(
           6250,
           miner.address,
-          "citycoins"
+          "alex"
         );
       });
 
@@ -1177,7 +1177,7 @@ describe("[CityCoin Core]", () => {
         receipt.events.expectFungibleTokenMintEvent(
           3125,
           miner.address,
-          "citycoins"
+          "alex"
         );
       });
     });
@@ -1705,13 +1705,13 @@ describe("[CityCoin Core]", () => {
 
         // assert
         receipt.result.expectOk().expectBool(true);
-
-        assertEquals(receipt.events.length, 1);
+        
+        assertEquals(receipt.events.length, 2);
         receipt.events.expectFungibleTokenTransferEvent(
           amountTokens,
           stacker.address,
           clients.core.getContractAddress(),
-          "citycoins"
+          "alex"
         );
       });
 
@@ -1745,13 +1745,13 @@ describe("[CityCoin Core]", () => {
         // assert
         receipts.forEach((receipt: TxReceipt) => {
           receipt.result.expectOk().expectBool(true);
-          assertEquals(receipt.events.length, 1);
+          assertEquals(receipt.events.length, 2);
 
           receipt.events.expectFungibleTokenTransferEvent(
             amountTokens,
             stacker.address,
             clients.core.getContractAddress(),
-            "citycoins"
+            "alex"
           );
         });
       });
@@ -2107,13 +2107,13 @@ describe("[CityCoin Core]", () => {
 
         // assert
         receipt.result.expectOk().expectBool(true);
-        assertEquals(receipt.events.length, 2);
+        assertEquals(receipt.events.length, 3);
 
         receipt.events.expectFungibleTokenTransferEvent(
           amountTokens,
           clients.core.getContractAddress(),
           stacker.address,
-          "citycoins"
+          "alex"
         );
 
         receipt.events.expectSTXTransferEvent(
@@ -2148,13 +2148,13 @@ describe("[CityCoin Core]", () => {
         // assert
         receipt.result.expectOk().expectBool(true);
 
-        assertEquals(receipt.events.length, 1);
+        assertEquals(receipt.events.length, 2);
 
         receipt.events.expectFungibleTokenTransferEvent(
           amountTokens,
           clients.core.getContractAddress(),
           stacker.address,
-          "citycoins"
+          "alex"
         );
       });
 
@@ -2239,13 +2239,13 @@ describe("[CityCoin Core]", () => {
             receipt.result.expectErr();
           } else {
             receipt.result.expectOk().expectBool(true);
-            assertEquals(receipt.events.length, 1);
+            assertEquals(receipt.events.length, 2);
 
             receipt.events.expectFungibleTokenTransferEvent(
               toReturn,
               clients.core.getContractAddress(),
               stacker.address,
-              "citycoins"
+              "alex"
             );
           }
         }
