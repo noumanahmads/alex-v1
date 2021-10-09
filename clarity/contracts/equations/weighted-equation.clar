@@ -12,11 +12,9 @@
 (define-constant ERR-MATH-CALL (err 4003))
 
 ;; max in/out as % of liquidity
-;; (define-constant MAX_IN_RATIO (* u2 (pow u10 u6))) ;; 2%
-;; (define-constant MAX_OUT_RATIO (* u2 (pow u10 u6))) ;; 2%
-;; for testing only
-(define-constant MAX_IN_RATIO (* u9 (pow u10 u7)))
-(define-constant MAX_OUT_RATIO (* u9 (pow u10 u7)))
+(define-constant MAX_IN_RATIO (* u30 (pow u10 u6))) ;; 30%
+(define-constant MAX_OUT_RATIO (* u30 (pow u10 u6))) ;; 30%
+;;(define-constant EQUATION_TOLERANCE u10)
 
 ;; data maps and vars
 ;;
@@ -55,12 +53,14 @@
                 (denominator (unwrap-panic (add-fixed balance-x dx)))
                 (base (unwrap-panic (div-up balance-x denominator)))
                 (uncapped-exponent (unwrap-panic (div-up weight-x weight-y)))
-                (bound (unwrap-panic (contract-call? .math-log-exp get-exp-bound)))
+                (bound (unwrap-panic (get-exp-bound)))
                 (exponent (if (< uncapped-exponent bound) uncapped-exponent bound))
                 (power (unwrap-panic (pow-up base exponent)))
-                (complement (unwrap-panic (sub-fixed ONE_8 power)))
+                (complement (if (<= ONE_8 power) u0 (unwrap-panic (sub-fixed ONE_8 power))))
+                (dy (unwrap-panic (mul-down balance-y complement)))
             )
-            (mul-down balance-y complement)
+            (asserts! (< dy (unwrap-panic (mul-down balance-y MAX_OUT_RATIO))) ERR-MAX-OUT-RATIO)
+            (ok dy)
         ) 
     )    
 )
@@ -77,15 +77,17 @@
         (asserts! (< dy (unwrap-panic (mul-down balance-y MAX_OUT_RATIO))) ERR-MAX-OUT-RATIO)
         (let 
             (
-                (denominator (unwrap-panic (sub-fixed balance-y dy)))
+                (denominator (if (<= balance-y dy) u0 (unwrap-panic (sub-fixed balance-y dy))))
                 (base (unwrap-panic (div-down balance-y denominator)))
                 (uncapped-exponent (unwrap-panic (div-down weight-x weight-y)))
-                (bound (unwrap-panic (contract-call? .math-log-exp get-exp-bound)))
+                (bound (unwrap-panic (get-exp-bound)))
                 (exponent (if (< uncapped-exponent bound) uncapped-exponent bound))
                 (power (unwrap-panic (pow-down base exponent)))
-                (ratio (unwrap-panic (sub-fixed power ONE_8)))
+                (ratio (if (<= power ONE_8) u0 (unwrap-panic (sub-fixed power ONE_8))))
+                (dx (unwrap-panic (mul-down balance-x ratio)))
             )
-            (mul-down balance-x ratio)
+            (asserts! (< dx (unwrap-panic (mul-down balance-x MAX_IN_RATIO))) ERR-MAX-IN-RATIO)
+            (ok dx)
         )
     )
 )
@@ -113,7 +115,7 @@
                     (base (unwrap-panic (div-up spot price)))
                     (power (unwrap-panic (pow-down base weight-y)))                
                 )
-                (mul-up balance-x (unwrap-panic (sub-fixed power ONE_8)))            
+                (mul-up balance-x (if (<= power ONE_8) u0 (unwrap-panic (sub-fixed power ONE_8))))
             )
         )
     )   
@@ -135,7 +137,7 @@
                     (base (unwrap-panic (div-up spot price)))
                     (power (unwrap-panic (pow-down base weight-y)))
                 )
-                (mul-up balance-y (unwrap-panic (sub-fixed ONE_8 power)))
+                (mul-up balance-y (if (<= ONE_8 power) u0 (unwrap-panic (sub-fixed ONE_8 power))))
             )
         )
     )   
@@ -298,7 +300,7 @@
 (define-read-only (pow-down (a uint) (b uint))    
     (let
         (
-            (raw (unwrap-panic (contract-call? .math-log-exp pow-fixed a b)))
+            (raw (unwrap-panic (pow-fixed a b)))
             (max-error (+ u1 (unwrap-panic (mul-up raw MAX_POW_RELATIVE_ERROR))))
         )
         (if (< raw max-error)
@@ -311,7 +313,7 @@
 (define-read-only (pow-up (a uint) (b uint))
     (let
         (
-            (raw (unwrap-panic (contract-call? .math-log-exp pow-fixed a b)))
+            (raw (unwrap-panic (pow-fixed a b)))
             (max-error (+ u1 (unwrap-panic (mul-up raw MAX_POW_RELATIVE_ERROR))))
         )
         (add-fixed raw max-error)

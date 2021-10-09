@@ -105,7 +105,7 @@
 ;; arrive at that result. In particular, exp(ln(x)) = x, and ln(x^y) = y * ln(x). This means
 ;; x^y = exp(y * ln(x)).
 ;; Reverts if ln(x) * y is smaller than `MIN_NATURAL_EXPONENT`, or larger than `MAX_NATURAL_EXPONENT`.
-(define-private (pow-priv (x uint) (y uint))
+(define-read-only (pow-priv (x uint) (y uint))
   (let
     (
       (x-int (to-int x))
@@ -118,7 +118,7 @@
   )
 )
 
-(define-private (exp-pos (x int))
+(define-read-only (exp-pos (x int))
   (begin
     (asserts! (and (<= 0 x) (<= x MAX_NATURAL_EXPONENT)) (err ERR-INVALID-EXPONENT))
     (let

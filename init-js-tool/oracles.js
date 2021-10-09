@@ -7,12 +7,11 @@ const {
   stringAsciiCV,
   uintCV,
   broadcastTransaction,
-  bufferCVFromString
+  bufferCVFromString,
 } = require('@stacks/transactions');
-
-
+const {wait_until_confirmation, get_nonce } = require('./utils')
 const {
-  getPK, network
+  getDeployerPK, getUserPK, network
 } = require('./wallet');
 
 //Use CoinGeckoClient to fetch current prices of btc & usdc
@@ -38,10 +37,10 @@ const initCoinPrice = async () => {
 //Call open-oracle to set price
 const setOpenOracle = async (symbol, src, price) => {
   console.log('Setting oracle...', symbol, src, price);
-  const privateKey = await getPK();
+  const privateKey = await getDeployerPK();
 
   const txOptions = {
-    contractAddress: process.env.ACCOUNT_ADDRESS,
+    contractAddress: process.env.DEPLOYER_ACCOUNT_ADDRESS,
     contractName: 'open-oracle',
     functionName: 'update-price',
     functionArgs: [
@@ -58,6 +57,7 @@ const setOpenOracle = async (symbol, src, price) => {
     const transaction = await makeContractCall(txOptions);
     const broadcastResponse = await broadcastTransaction(transaction, network);
     console.log(broadcastResponse);
+    await wait_until_confirmation(broadcastResponse.txid);
   } catch (error) {
     console.log(error);
   }
@@ -68,7 +68,7 @@ const getOpenOracle = async (src, symbol) => {
   console.log('Getting oracle...', src, symbol);
 
   const options = {
-    contractAddress: process.env.ACCOUNT_ADDRESS,
+    contractAddress: process.env.DEPLOYER_ACCOUNT_ADDRESS,
     contractName: 'open-oracle',
     functionName: 'get-price',
     functionArgs: [
@@ -76,11 +76,10 @@ const getOpenOracle = async (src, symbol) => {
       stringAsciiCV(symbol)
     ],
     network: network,
-    senderAddress: process.env.ACCOUNT_ADDRESS,
+    senderAddress: process.env.USER_ACCOUNT_ADDRESS,
   };
   try {
-    const result = await callReadOnlyFunction(options);
-    console.log(result);
+    return callReadOnlyFunction(options);
   } catch (error) {
     console.log(error);
   }

@@ -22,7 +22,6 @@
 (define-constant already-ERR-EXPIRY (err u2010))
 (define-constant ERR-WEIGHTED-EQUATION-CALL (err u2009))
 (define-constant ERR-MATH-CALL (err u2010))
-(define-constant ERR-INTERNAL-FUNCTION-CALL (err u1001))
 (define-constant internal-get-weight-err (err u2012))
 
 
@@ -231,9 +230,9 @@
                 (dx (get dx reduce-data))
                 (dy (get dy reduce-data))
                 (pool-updated (merge pool {
-                    total-supply: (unwrap! (sub-fixed total-supply shares) ERR-MATH-CALL),
-                    balance-x: (unwrap! (sub-fixed balance-x dx) ERR-MATH-CALL),
-                    balance-y: (unwrap! (sub-fixed balance-y dy) ERR-MATH-CALL)
+                    total-supply: (if (<= total-supply shares) u0 (unwrap! (sub-fixed total-supply shares) ERR-MATH-CALL)),
+                    balance-x: (if (<= balance-x dx) u0 (unwrap! (sub-fixed balance-x dx) ERR-MATH-CALL)),
+                    balance-y: (if (<= balance-y dx) u0 (unwrap! (sub-fixed balance-y dy) ERR-MATH-CALL))
                     })
                 )
             )
@@ -265,7 +264,7 @@
 
                 ;; fee = dx * fee-rate-x
                 (fee (unwrap! (mul-up dx fee-rate-x) ERR-MATH-CALL))
-                (dx-net-fees (unwrap! (sub-fixed dx fee) ERR-MATH-CALL))
+                (dx-net-fees (if (<= dx fee) u0 (unwrap! (sub-fixed dx fee) ERR-MATH-CALL)))
 
                 ;; swap triggers update of weight
                 (weight-x (try! (get-weight-x token-x-trait token-y-trait expiry)))
@@ -276,7 +275,7 @@
                     (merge pool
                         {
                             balance-x: (unwrap! (add-fixed balance-x dx-net-fees) ERR-MATH-CALL),
-                            balance-y: (unwrap! (sub-fixed balance-y dy) ERR-MATH-CALL),
+                            balance-y: (if (<= balance-y dy) u0 (unwrap! (sub-fixed balance-y dy) ERR-MATH-CALL)),
                             fee-balance-x: (unwrap! (add-fixed fee (get fee-balance-x pool)) ERR-MATH-CALL),
                             weight-x-t: weight-x
                         }
@@ -311,7 +310,7 @@
 
                 ;; fee = dy * fee-rate-y
                 (fee (unwrap! (mul-up dy fee-rate-y) ERR-MATH-CALL))
-                (dy-net-fees (unwrap! (sub-fixed dy fee) ERR-MATH-CALL))
+                (dy-net-fees (if (<= dy fee) u0 (unwrap! (sub-fixed dy fee) ERR-MATH-CALL)))
 
                 ;; swap triggers update of weight
                 (weight-x (try! (get-weight-x token-x-trait token-y-trait expiry)))
@@ -321,7 +320,7 @@
                 (pool-updated
                     (merge pool
                         {
-                            balance-x: (unwrap! (sub-fixed balance-x dx) ERR-MATH-CALL),
+                            balance-x: (if (<= balance-x dx) u0 (unwrap! (sub-fixed balance-x dx) ERR-MATH-CALL)),
                             balance-y: (unwrap! (add-fixed balance-y dy-net-fees) ERR-MATH-CALL),
                             fee-balance-y: (unwrap! (add-fixed fee (get fee-balance-y pool)) ERR-MATH-CALL),
                             weight-x-t: weight-x
@@ -329,7 +328,6 @@
                     )
                 )
             )
-            ;; (unwrap! (contract-call? token-x-trait transfer dx .alex-vault tx-sender none) ERR-TRANSFER-X-FAILED)
             (try! (contract-call? .alex-vault transfer-ft token-x-trait dx (as-contract tx-sender) tx-sender))
             (unwrap! (contract-call? token-y-trait transfer dy tx-sender .alex-vault none) ERR-TRANSFER-Y-FAILED)
             ;; post setting
@@ -433,24 +431,22 @@
             (address (get fee-to-address pool))
             (fee-x (get fee-balance-x pool))
             (fee-y (get fee-balance-y pool))
-            (rebate-rate (unwrap-panic (contract-call? .alex-reserve-pool get-rebate-rate)))
-            (fee-x-rebate (unwrap! (mul-down fee-x rebate-rate) ERR-MATH-CALL))
-            (fee-y-rebate (unwrap! (mul-down fee-y rebate-rate) ERR-MATH-CALL))
-            (fee-x-net (unwrap! (sub-fixed fee-x fee-x-rebate) ERR-MATH-CALL))
-            (fee-y-net (unwrap! (sub-fixed fee-y fee-y-rebate) ERR-MATH-CALL))                 
+            (rebate-rate (unwrap-panic (contract-call? .alex-reserve-pool get-rebate-rate)))              
         )
         (asserts! (is-eq contract-caller (get fee-to-address pool)) ERR-NOT-AUTHORIZED)
         (and (> fee-x u0) 
             (and 
                 ;; first transfer fee-x to tx-sender
-                ;; (unwrap! (contract-call? token-x-trait transfer fee-x .alex-vault tx-sender none) ERR-TRANSFER-X-FAILED)
                 (try! (contract-call? .alex-vault transfer-ft token-x-trait fee-x (as-contract tx-sender) tx-sender))
                 ;; send fee-x to reserve-pool to mint alex    
                 (try! 
                     (contract-call? .alex-reserve-pool transfer-to-mint 
                         (if (is-eq token-x .token-usda) 
                             fee-x 
-                            (get dx (try! (contract-call? .fixed-weight-pool swap-y-for-x .token-usda token-x-trait u50000000 u50000000 fee-x)))
+                            (if (is-some (contract-call? .fixed-weight-pool get-pool-exists .token-usda token-x-trait u50000000 u50000000))
+                                (get dx (try! (contract-call? .fixed-weight-pool swap-y-for-x .token-usda token-x-trait u50000000 u50000000 fee-x)))
+                                (get dy (try! (contract-call? .fixed-weight-pool swap-x-for-y token-x-trait .token-usda u50000000 u50000000 fee-x)))
+                            )                            
                         )
                     )
                 )
@@ -467,7 +463,10 @@
                     (contract-call? .alex-reserve-pool transfer-to-mint 
                         (if (is-eq token-y .token-usda) 
                             fee-y 
-                            (get dx (try! (contract-call? .fixed-weight-pool swap-y-for-x .token-usda token-y-trait u50000000 u50000000 fee-y)))
+                            (if (is-some (contract-call? .fixed-weight-pool get-pool-exists .token-usda token-y-trait u50000000 u50000000))
+                                (get dx (try! (contract-call? .fixed-weight-pool swap-y-for-x .token-usda token-y-trait u50000000 u50000000 fee-y)))
+                                (get dy (try! (contract-call? .fixed-weight-pool swap-x-for-y token-y-trait .token-usda u50000000 u50000000 fee-y)))
+                            )                            
                         )
                     )
                 )
@@ -689,7 +688,7 @@
 (define-read-only (pow-down (a uint) (b uint))    
     (let
         (
-            (raw (unwrap-panic (contract-call? .math-log-exp pow-fixed a b)))
+            (raw (unwrap-panic (pow-fixed a b)))
             (max-error (+ u1 (unwrap-panic (mul-up raw MAX_POW_RELATIVE_ERROR))))
         )
         (if (< raw max-error)
@@ -702,7 +701,7 @@
 (define-read-only (pow-up (a uint) (b uint))
     (let
         (
-            (raw (unwrap-panic (contract-call? .math-log-exp pow-fixed a b)))
+            (raw (unwrap-panic (pow-fixed a b)))
             (max-error (+ u1 (unwrap-panic (mul-up raw MAX_POW_RELATIVE_ERROR))))
         )
         (add-fixed raw max-error)
@@ -944,26 +943,5 @@
       (ok (- 0 (unwrap-panic (ln-priv (/ (* iONE_8 iONE_8) a)))))
       (ln-priv a)
    )
- )
-)
-
-(define-read-only (test)
-  (let
-    (
-      (x (* u7 (pow u10 u6)))
-      (y (* u233 (pow u10 u6)))
-      (x-int (to-int x))
-      (y-int (to-int y))
-      (lnx (unwrap-panic (ln-priv x-int)))
-      (logx-times-y (/ (* lnx y-int) iONE_8))
-      ;;(r (exp-pos (* -1 logx-times-y)))
-
-      ;;(arg (* 69 iONE_8))
-      ;;(r (exp-pos arg))
-      ;;(x_product (fold accumulate_product x_a_list {x: arg, product: iONE_8}))
-  )
-  ;;(ok logx-times-y)
-  ;;x_product
-  (ok (pow-fixed x y))
  )
 )
