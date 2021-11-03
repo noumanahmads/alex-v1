@@ -24,13 +24,22 @@ class Faucet {
     }
 
     setWbtcAmount(sender: Account, amount: number) {
-        let block = this.chain.mineBlock([
-            Tx.contractCall("faucet", "set-wbtc-amount", [
-              types.uint(amount),
-            ], sender.address),
-          ]);
-          return block.receipts[0].result;
-      }
+      let block = this.chain.mineBlock([
+          Tx.contractCall("faucet", "set-wbtc-amount", [
+            types.uint(amount),
+          ], sender.address),
+        ]);
+        return block.receipts[0].result;
+    }
+
+    setWstxAmount(sender: Account, amount: number) {
+      let block = this.chain.mineBlock([
+          Tx.contractCall("faucet", "set-wstx-amount", [
+            types.uint(amount),
+          ], sender.address),
+        ]);
+        return block.receipts[0].result;
+    }
       
     setStxAmount(sender: Account, amount: number) {
       let block = this.chain.mineBlock([
@@ -50,6 +59,11 @@ class Faucet {
         return this.chain.callReadOnlyFn("faucet", "get-wbtc-amount", [
         ], this.deployer.address);
     }
+
+    getWstxAmount() {
+      return this.chain.callReadOnlyFn("faucet", "get-wstx-amount", [
+      ], this.deployer.address);
+  }
     
     getStxAmount() {
         return this.chain.callReadOnlyFn("faucet", "get-stx-amount", [
@@ -64,6 +78,11 @@ class Faucet {
           ]);
           return block.receipts[0].result;
     }
+
+    getSomeWstxTokens(sender: Account) {
+      let block = this.chain.mineBlock([Tx.contractCall("faucet", "get-some-wstx-tokens", [], sender.address)]);
+      return block.receipts[0].result;
+  }
     
     getBalance(token: string, owner: string) {
         return this.chain.callReadOnlyFn(token, "get-balance", [
@@ -94,7 +113,10 @@ Clarinet.test({
         result.expectErr().expectUint(1000);
 
         result = await FaucetTest.setWbtcAmount(wallet_1, 10);
-        result.expectErr().expectUint(1000)      
+        result.expectErr().expectUint(1000);
+
+        result = await FaucetTest.setWstxAmount(wallet_1, 10);
+        result.expectErr().expectUint(1000);
         
         await FaucetTest.setStxAmount(deployer, 100 * ONE_8);
         result = await FaucetTest.getStxAmount(); 
@@ -106,7 +128,11 @@ Clarinet.test({
 
         await FaucetTest.setWbtcAmount(deployer, 100 * ONE_8);
         result = await FaucetTest.getWbtcAmount(); 
-        result.result.expectOk().expectUint(100 * ONE_8); 
+        result.result.expectOk().expectUint(100 * ONE_8);
+
+        await FaucetTest.setWstxAmount(deployer, 100 * ONE_8);
+        result = await FaucetTest.getWstxAmount();
+        result.result.expectOk().expectUint(100 * ONE_8);
 
         result = await FaucetTest.getBalance('token-usda', wallet_7.address);
         result.result.expectOk().expectUint(0);
@@ -121,6 +147,12 @@ Clarinet.test({
         result.result.expectOk().expectUint(100 * ONE_8);
 
         result = await FaucetTest.getBalance('token-wbtc', wallet_7.address);
-        result.result.expectOk().expectUint(100 * ONE_8);             
+        result.result.expectOk().expectUint(100 * ONE_8);
+
+        result = await FaucetTest.getSomeWstxTokens(wallet_7);
+        result.expectOk();
+
+        result = await FaucetTest.getBalance('token-wstx', wallet_7.address);
+        result.result.expectOk().expectUint(100 * ONE_8);
     },    
 });

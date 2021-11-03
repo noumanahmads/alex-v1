@@ -10,6 +10,7 @@
 
 (define-data-var usda-amount uint u0)
 (define-data-var wbtc-amount uint u0)
+(define-data-var wstx-amount uint u0)
 (define-data-var stx-amount uint u0)
 
 (define-read-only (get-usda-amount)
@@ -18,6 +19,10 @@
 
 (define-read-only (get-wbtc-amount)
     (ok (var-get wbtc-amount))
+)
+
+(define-read-only (get-wstx-amount)
+    (ok (var-get wstx-amount))
 )
 
 (define-read-only (get-stx-amount)
@@ -38,6 +43,13 @@
     )
 )
 
+(define-public (set-wstx-amount (amount uint))
+    (begin
+        (asserts! (is-eq contract-caller contract-owner) ERR-NOT-AUTHORIZED)
+        (ok (var-set wstx-amount amount))
+    )
+)
+
 (define-public (set-stx-amount (amount uint))
     (begin
         (asserts! (is-eq contract-caller contract-owner) ERR-NOT-AUTHORIZED)
@@ -55,3 +67,6 @@
     )
 )
 
+(define-public (get-some-wstx-tokens)
+    (contract-call? .token-wstx mint tx-sender (var-get wstx-amount))
+)

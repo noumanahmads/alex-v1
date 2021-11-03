@@ -76,6 +76,39 @@ class WBTCToken {
 export { WBTCToken };
 
 
+class WSTXToken {
+  chain: Chain;
+  deployer: Account;
+
+  constructor(chain: Chain, deployer: Account) {
+    this.chain = chain;
+    this.deployer = deployer;
+  }
+
+  balanceOf(wallet: string) {
+    return this.chain.callReadOnlyFn("token-wstx", "get-balance", [
+      types.principal(wallet),
+    ], this.deployer.address);
+  }
+
+  transferToken(amount: number, sender: string, receiver: string, memo:ArrayBuffer) {
+    let block = this.chain.mineBlock([
+        Tx.contractCall("token-wstx", "transfer", [
+          types.uint(amount),
+          types.principal(sender),
+          types.principal(receiver),
+          types.some(types.buff(memo))
+        ], this.deployer.address),
+      ]);
+      return block.receipts[0].result;
+  }
+
+  totalSupply() {
+    return this.chain.callReadOnlyFn("token-wstx", "get-total-supply", [], this.deployer.address);
+  }
+}
+export { WSTXToken };
+
 
 class POOLTOKEN_FWP_WBTC_USDA_5050 {
   chain: Chain;
