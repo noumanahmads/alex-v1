@@ -86,7 +86,7 @@
   (begin
     (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
     (try! (ft-mint? ustx (fixed-to-decimals amount) recipient))
-    (as-contract (stx-transfer? amount recipient tx-sender))
+    (stx-transfer? amount recipient (as-contract tx-sender))
   )
 )
 
@@ -102,3 +102,8 @@
 (begin
   (try! (ft-mint? ustx u10000 tx-sender))
 )
+
+;; (contract-call? .token-ustx mint 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE u100000000000)
+;; (contract-call? .token-ustx mint 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE u200000000000)
+;; (contract-call? .token-ustx burn 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE u200000000000)
+;; (contract-call? .token-ustx burn 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE u100000000000)
