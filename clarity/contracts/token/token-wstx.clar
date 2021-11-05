@@ -1,7 +1,7 @@
 (impl-trait .trait-ownable.ownable-trait)
 (impl-trait .trait-pool-token.pool-token-trait)
 
-(define-fungible-token ustx)
+(define-fungible-token wstx)
 
 (define-data-var token-uri (string-utf8 256) u"")
 (define-data-var contract-owner principal tx-sender)
@@ -25,23 +25,23 @@
 ;; ---------------------------------------------------------
 
 (define-read-only (get-total-supply)
-  (ok (decimals-to-fixed (ft-get-supply ustx)))
+  (ok (decimals-to-fixed (ft-get-supply wstx)))
 )
 
 (define-read-only (get-name)
-  (ok "USTX")
+  (ok "wstx")
 )
 
 (define-read-only (get-symbol)
-  (ok "USTX")
+  (ok "wstx")
 )
 
 (define-read-only (get-decimals)
-  (ok u0)
+  (ok u8)
 )
 
 (define-read-only (get-balance (account principal))
-  (ok (decimals-to-fixed (ft-get-balance ustx account)))
+  (ok (decimals-to-fixed (ft-get-balance wstx account)))
 )
 
 (define-public (set-token-uri (value (string-utf8 256)))
@@ -72,7 +72,7 @@
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
   (begin
     (asserts! (is-eq sender tx-sender) ERR-NOT-AUTHORIZED)
-    (match (ft-transfer? ustx (fixed-to-decimals amount) sender recipient)
+    (match (ft-transfer? wstx (fixed-to-decimals amount) sender recipient)
       response (begin
         (print memo)
         (ok response)
@@ -82,28 +82,25 @@
   )
 )
 
-(define-public (mint (recipient principal) (amount uint))
+;; This can only be called by recipient since stx-transfer is involved ;; tx-sender -> .alex-vault
+(define-public (mint (recipient principal) (amount uint)) 
   (begin
-    (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
-    (try! (ft-mint? ustx (fixed-to-decimals amount) recipient))
-    (stx-transfer? amount recipient (as-contract tx-sender))
+    (try! (stx-transfer? amount recipient .alex-vault))
+    (ft-mint? wstx (fixed-to-decimals amount) recipient)
   )
 )
 
+;; This can only be called by contract since stx-transfer is involved ;; .alex-vault -> sender
 (define-public (burn (sender principal) (amount uint))
   (begin
     (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
-    (try! (ft-burn? ustx (fixed-to-decimals amount) sender))
-    (as-contract (stx-transfer? amount tx-sender sender))
+    (as-contract (try! (contract-call? .alex-vault transfer-stx amount tx-sender sender)))
+    (ft-burn? wstx (fixed-to-decimals amount) sender)
   )
 )
 
 ;; Initialize the contract for Testing.
 (begin
-  (try! (ft-mint? ustx u10000 tx-sender))
+  (try! (ft-mint? wstx u2000000000000 tx-sender))
+  (try! (ft-mint? wstx u2000000000000 'ST1J4G6RR643BCG8G8SR6M2D9Z9KXT2NJDRK3FBTK)) ;;wallet_1
 )
-
-;; (contract-call? .token-ustx mint 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE u100000000000)
-;; (contract-call? .token-ustx mint 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE u200000000000)
-;; (contract-call? .token-ustx burn 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE u200000000000)
-;; (contract-call? .token-ustx burn 'ST1HTBVD3JG9C05J7HBJTHGR0GGW7KXW28M5JS8QE u100000000000)
