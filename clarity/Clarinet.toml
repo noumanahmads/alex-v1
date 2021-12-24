@@ -42,7 +42,9 @@ depends_on = [
   "token-usda",
   "alex-reserve-pool",
   "yield-token-pool",
-  "alex-vault"
+  "alex-vault",
+  "yield-usda",
+  "key-usda-wstx"
 ]
 
 [contracts.yield-collateral-rebalancing-pool]

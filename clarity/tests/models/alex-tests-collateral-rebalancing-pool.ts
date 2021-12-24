@@ -109,6 +109,21 @@ import {
         return block.receipts[0].result;
       }
 
+      addToPositionWithSpot(user: Account, token: string, collateral: string, expiry: number, yieldToken: string, keyToken:string, dX: number, spot: number) {
+        let block = this.chain.mineBlock([
+          Tx.contractCall("collateral-rebalancing-pool", "add-to-position", [
+            types.principal(token),
+            types.principal(collateral),
+            types.uint(expiry),            
+            types.principal(yieldToken),
+            types.principal(keyToken),
+            types.uint(dX),
+            types.uint(spot)
+          ], user.address),
+        ]);
+        return block.receipts[0].result;
+      }
+
       addToPositionAndSwitch(user: Account, token: string, collateral: string, expiry: number, yieldToken: string, keyToken: string, dX: number) {
         let block = this.chain.mineBlock([
           Tx.contractCall("collateral-rebalancing-pool", "add-to-position-and-switch", [
@@ -118,6 +133,21 @@ import {
             types.principal(yieldToken),
             types.principal(keyToken),
             types.uint(dX)
+          ], user.address),
+        ]);
+        return block.receipts[0].result;        
+      }
+
+      addToPositionAndSwitchWithSpot(user: Account, token: string, collateral: string, expiry: number, yieldToken: string, keyToken: string, dX: number, spot: number) {
+        let block = this.chain.mineBlock([
+          Tx.contractCall("collateral-rebalancing-pool", "add-to-position-and-switch", [
+            types.principal(token),
+            types.principal(collateral),
+            types.uint(expiry),            
+            types.principal(yieldToken),
+            types.principal(keyToken),
+            types.uint(dX),
+            types.uint(spot)
           ], user.address),
         ]);
         return block.receipts[0].result;        
