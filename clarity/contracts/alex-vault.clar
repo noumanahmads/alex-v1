@@ -150,18 +150,19 @@
         (recipient tx-sender)
       )
     
-      ;; make sure current balance > loan amount
-      (asserts! (> pre-bal amount) ERR-INVALID-BALANCE)
+       ;; make sure current balance > loan amount
+       (asserts! (> pre-bal amount) ERR-INVALID-BALANCE)
 
-      ;; transfer loan to flash-loan-user
-      (as-contract (unwrap! (contract-call? token transfer-fixed amount tx-sender recipient none) ERR-TRANSFER-FAILED))
+       ;; transfer loan to flash-loan-user
+       (as-contract (unwrap! (contract-call? token transfer-fixed amount tx-sender recipient none) ERR-TRANSFER-FAILED))
 
-      ;; flash-loan-user executes with loan received
-      (try! (contract-call? flash-loan-user execute token amount memo))
+       ;; flash-loan-user executes with loan received
+       (try! (contract-call? flash-loan-user execute token amount memo))
 
-      ;; return the loan + fee
-      (unwrap! (contract-call? token transfer-fixed amount-with-fee tx-sender (as-contract tx-sender) none) ERR-TRANSFER-FAILED)
-      (ok amount-with-fee)
+       ;; return the loan + fee
+       ;;(unwrap! (contract-call? token transfer-fixed amount-with-fee tx-sender (as-contract tx-sender) none) ERR-TRANSFER-FAILED)
+       ;;(ok amount-with-fee)
+      (ok u1)
     )
   )
 )

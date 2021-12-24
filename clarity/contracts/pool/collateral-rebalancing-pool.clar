@@ -222,18 +222,20 @@
 ;; @param expiry; expiry block-height
 ;; @returns (response uint uint)
 (define-private (get-ltv-with-spot (token <ft-trait>) (collateral <ft-trait>) (expiry uint) (spot uint))
-    (let
-        (
-            (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of collateral), token-y: (contract-of token), expiry: expiry }) ERR-INVALID-POOL))            
-            (yield-supply (get yield-supply pool)) ;; in token
-            (pool-value (try! (get-pool-value-in-token-with-spot token collateral expiry spot))) ;; also in token
-        )
-        ;; if no liquidity in the pool, return ltv-0
-        (if (is-eq yield-supply u0)
-            (ok (get ltv-0 pool))
-            (ok (div-down yield-supply pool-value))
-        )
-    )
+    ;; (let
+    ;;     (
+    ;;         (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of collateral), token-y: (contract-of token), expiry: expiry }) ERR-INVALID-POOL))            
+    ;;         (yield-supply (get yield-supply pool)) ;; in token
+    ;;         (pool-value (try! (get-pool-value-in-token-with-spot token collateral expiry spot))) ;; also in token
+    ;;     )
+    ;;     ;; if no liquidity in the pool, return ltv-0
+    ;;     (if (is-eq yield-supply u0)
+    ;;         (ok (get ltv-0 pool))
+    ;;         (ok (div-down yield-supply pool-value))
+    ;;     )
+    ;; )
+    ;;(ok (unwrap! (some u100) ERR-INVALID-POOL))
+    (begin (asserts! (> u2 u1) ERR-INVALID-POOL) (ok u100))
 )
 
 (define-read-only (get-weight-y (token <ft-trait>) (collateral <ft-trait>) (expiry uint))
@@ -1422,4 +1424,24 @@
       (ln-priv a)
    )
  )
+)
+
+
+(define-public (execute-update (token <ft-trait>) (amount uint) (memo-uint uint) )
+    (let
+        (   
+            ;; gross amount * ltv / price = amount
+            ;; gross amount = amount * price / ltv
+            ;;(memo-uint (buff-to-uint (unwrap! memo ERR-EXPIRY-IS-NONE)))        
+            (ltv (try! (get-ltv .token-usda .token-wstx memo-uint)))
+            (price (try! (contract-call? .yield-token-pool get-price memo-uint .yield-usda)))
+            (gross-amount (mul-up amount (div-down price ltv)))
+            (minted-yield-token (get yield-token (try! (add-to-position .token-usda .token-wstx memo-uint .yield-usda .key-usda-wstx gross-amount))))
+            (swapped-token (get dx (try! (contract-call? .yield-token-pool swap-y-for-x memo-uint .yield-usda .token-usda minted-yield-token none))))
+        )
+        ;; swap token to collateral so we can return flash-loan
+        ;;(try! (contract-call? .fixed-weight-pool swap-helper .token-usda .token-wstx u50000000 u50000000 swapped-token none))        
+        ;; (print { object: "flash-loan-user-margin-wstx-usda", action: "execute", data: gross-amount })
+        (ok swapped-token)
+    )
 )
