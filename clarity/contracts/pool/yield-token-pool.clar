@@ -8,6 +8,7 @@
 (define-constant ONE_8 (pow u10 u8)) ;; 8 decimal places
 (define-constant MAX_T u85000000)
 
+(define-constant ERR-INVALID-BALANCE (err u1001))
 (define-constant ERR-INVALID-POOL (err u2001))
 (define-constant ERR-INVALID-LIQUIDITY (err u2003))
 (define-constant ERR-TRANSFER-FAILED (err u3000))
@@ -161,7 +162,14 @@
             (balance-yield-token (+ (get balance-yield-token pool) (get balance-virtual pool)))
             (t-value (try! (get-t expiry listed)))
         )
-        (contract-call? .yield-token-equation get-yield balance-token balance-yield-token t-value)
+        (get-yield-from-equation balance-token balance-yield-token t-value)
+        ;; (asserts! (>= balance-yield-token balance-token) ERR-INVALID-BALANCE)
+        ;; (let
+        ;;     (
+        ;;         (price (pow-up (div-down balance-yield-token balance-token) t-value))
+        ;;     )
+        ;;     (if (<= price ONE_8) (ok u0) (ok (- price ONE_8)))
+        ;; )
     )
 )
 
@@ -178,8 +186,46 @@
             (balance-yield-token (+ (get balance-yield-token pool) (get balance-virtual pool)))
             (t-value (try! (get-t expiry listed)))
         )
-        (contract-call? .yield-token-equation get-price balance-token balance-yield-token t-value)
+        (get-price-from-equation balance-token balance-yield-token t-value)
+        
+        ;; ;; reduces 3.11% to 3.07%
+        ;; (asserts! (>= balance-token balance-yield-token) ERR-INVALID-BALANCE)
+        ;; (ok (pow-up (div-down balance-yield-token balance-token) t-value))
     )
+)
+
+
+;; @desc get-price
+;; @desc b_y = balance-yield-token
+;; @desc b_x = balance-token
+;; @desc price = (b_y / b_x) ^ t
+;; @param balance-x; balance of token-x (token)
+;; @param balance-y; balance of token-y (yield-token)
+;; @param t; time-to-maturity
+;; @returns (response uint uint)
+(define-read-only (get-price-from-equation (balance-x uint) (balance-y uint) (t uint))
+  (begin
+    (asserts! (>= balance-y balance-x) ERR-INVALID-BALANCE)      
+    (ok (pow-up (div-down balance-y balance-x) t))
+  )
+)
+
+;; @desc get-yield
+;; @param balance-x; balance of token-x (token)
+;; @param balance-y; balance of token-y (yield-token)
+;; @param t; time-to-maturity
+;; @returns (response uint uint)
+(define-read-only (get-yield-from-equation (balance-x uint) (balance-y uint) (t uint))
+  (begin
+    (asserts! (>= balance-y balance-x) ERR-INVALID-BALANCE)
+    (let
+        (
+            (price (pow-up (div-down balance-y balance-x) t))
+        )
+        ;; (ok (to-uint (unwrap-panic (ln-fixed (to-int price)))))
+        (if (<= price ONE_8) (ok u0) (ok (- price ONE_8)))
+    )
+  )
 )
 
 ;; @desc get-oracle-enabled
@@ -537,11 +583,11 @@
             (asserts! (< (default-to u0 min-dx) dx) ERR-EXCEEDS-MAX-SLIPPAGE)
 
             (and (> dx u0) (try! (contract-call? .alex-vault transfer-ft the-token dx tx-sender)))
-            (and (> dy u0) (unwrap! (contract-call? the-yield-token transfer-fixed expiry dy tx-sender .alex-vault) ERR-TRANSFER-FAILED))
-            (try! (contract-call? .alex-reserve-pool add-to-balance yield-token (- fee fee-rebate)))
+            (and (> dy u0) (unwrap! (contract-call? the-yield-token transfer-fixed expiry dy tx-sender .alex-vault) ERR-TRANSFER-FAILED)) ;; 0.17%
+            (try! (contract-call? .alex-reserve-pool add-to-balance yield-token (- fee fee-rebate))) ;; 0.08%
 
             ;; post setting
-            (map-set pools-data-map { yield-token: yield-token, expiry: expiry } pool-updated)
+            (map-set pools-data-map { yield-token: yield-token, expiry: expiry } pool-updated) ;; 0.01%
             (print { object: "pool", action: "swap-y-for-x", data: pool-updated })
             (ok {dx: dx, dy: dy-net-fees})
         )

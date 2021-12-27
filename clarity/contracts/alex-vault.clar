@@ -160,9 +160,8 @@
        (try! (contract-call? flash-loan-user execute token amount memo))
 
        ;; return the loan + fee
-       ;;(unwrap! (contract-call? token transfer-fixed amount-with-fee tx-sender (as-contract tx-sender) none) ERR-TRANSFER-FAILED)
-       ;;(ok amount-with-fee)
-      (ok u1)
+       (unwrap! (contract-call? token transfer-fixed amount-with-fee tx-sender (as-contract tx-sender) none) ERR-TRANSFER-FAILED)
+       (ok amount-with-fee) ;;u100000000000
     )
   )
 )

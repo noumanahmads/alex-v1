@@ -144,6 +144,13 @@
             (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)))
 )
 
+(define-public (swapper (token <ft-trait>) (collateral <ft-trait>) (dx-to-dy uint))
+    (if (is-some (get-pool-exists collateral token u50000000 u50000000))
+        (ok (get dy (try! (swap-x-for-y collateral token u50000000 u50000000 dx-to-dy none))))
+        (ok (get dx (try! (swap-y-for-x token collateral u50000000 u50000000 dx-to-dy none))))
+    )
+)
+
 ;; @desc set-oracle-enabled
 ;; @desc oracle can only be enabled
 ;; @restricted contract-owner

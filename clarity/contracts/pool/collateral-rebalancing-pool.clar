@@ -222,20 +222,22 @@
 ;; @param expiry; expiry block-height
 ;; @returns (response uint uint)
 (define-private (get-ltv-with-spot (token <ft-trait>) (collateral <ft-trait>) (expiry uint) (spot uint))
-    ;; (let
-    ;;     (
-    ;;         (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of collateral), token-y: (contract-of token), expiry: expiry }) ERR-INVALID-POOL))            
-    ;;         (yield-supply (get yield-supply pool)) ;; in token
-    ;;         (pool-value (try! (get-pool-value-in-token-with-spot token collateral expiry spot))) ;; also in token
-    ;;     )
-    ;;     ;; if no liquidity in the pool, return ltv-0
-    ;;     (if (is-eq yield-supply u0)
-    ;;         (ok (get ltv-0 pool))
-    ;;         (ok (div-down yield-supply pool-value))
-    ;;     )
-    ;; )
-    ;;(ok (unwrap! (some u100) ERR-INVALID-POOL))
-    (begin (asserts! (> u2 u1) ERR-INVALID-POOL) (ok u100))
+    (let
+        (
+            (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of collateral), token-y: (contract-of token), expiry: expiry }) ERR-INVALID-POOL))            
+            (yield-supply (get yield-supply pool)) ;; in token
+            ;; (pool-value (try! (get-pool-value-in-token-with-spot token collateral expiry spot))) ;; also in token
+            ;; Removed the function call
+            (balance-y (get balance-y pool))
+            (balance-x-in-y (div-down (get balance-x pool) spot))
+            (pool-value (+ balance-x-in-y balance-y))
+        )
+        ;; if no liquidity in the pool, return ltv-0
+        (if (is-eq yield-supply u0)
+            (ok (get ltv-0 pool))
+            (ok (div-down yield-supply pool-value))
+        )
+    )
 )
 
 (define-read-only (get-weight-y (token <ft-trait>) (collateral <ft-trait>) (expiry uint))
@@ -409,10 +411,11 @@
             (token-y (contract-of token))
             (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, expiry: expiry }) ERR-INVALID-POOL))
             (spot (try! (get-spot token collateral)))
+            (ltv-with-spot (try! (get-ltv-with-spot token collateral expiry spot)))
         )
         (asserts! (> dx u0) ERR-INVALID-LIQUIDITY)
         ;; mint is possible only if ltv < 1
-        (asserts! (>= (get conversion-ltv pool) (try! (get-ltv-with-spot token collateral expiry spot))) ERR-LTV-GREATER-THAN-ONE)
+        (asserts! (>= (get conversion-ltv pool) ltv-with-spot) ERR-LTV-GREATER-THAN-ONE)
         (asserts! (and (is-eq (get yield-token pool) (contract-of the-yield-token)) (is-eq (get key-token pool) (contract-of the-key-token))) ERR-INVALID-TOKEN)
         (let
             (
@@ -440,10 +443,16 @@
                                     (get dy (try! (contract-call? .fixed-weight-pool swap-x-for-y collateral token u50000000 u50000000 dx-to-dy none)))
                                     (get dx (try! (contract-call? .fixed-weight-pool swap-y-for-x token collateral u50000000 u50000000 dx-to-dy none)))
                                 )
+                                ;; Reduced the function calls to single
+                                ;; (try! (contract-call? .fixed-weight-pool swapper token collateral dx-to-dy))
                             )
                         )
                     )
                 )
+                
+                ;; ;; This code is compacted into one contract call above but doesn't reduces the runtime costs
+                ;; ;; This is happening because this is a call to another function which increases runtime cost
+                ;; (dy-weighted (unwrap-panic (contract-call? .fixed-weight-pool get-dx-dy token collateral dx-to-dy)))
 
                 (pool-updated (merge pool {
                     yield-supply: (+ yield-new-supply yield-supply),                    
@@ -455,7 +464,18 @@
 
             (if (is-eq token-x token-y)
                 u0
-                (unwrap! (contract-call? .fixed-weight-pool get-helper collateral token u50000000 u50000000 (+ dx balance-x (mul-down balance-y (try! (get-spot token collateral))))) ERR-POOL-AT-CAPACITY)
+                ;; Another call to function increases runtime costs
+                (unwrap! (contract-call? .fixed-weight-pool get-helper collateral token u50000000 u50000000 (+ dx balance-x (mul-down balance-y spot))) ERR-POOL-AT-CAPACITY)
+                ;; (if (is-eq (contract-of collateral) .token-wstx)
+                ;;     (try! (contract-call? .fixed-weight-pool get-y-given-wstx token u50000000 (+ dx balance-x (mul-down balance-y spot))))
+                ;;     (if (is-eq (contract-of token) .token-wstx)
+                ;;         (try! (contract-call? .fixed-weight-pool get-wstx-given-y collateral u50000000 (+ dx balance-x (mul-down balance-y spot))))
+                ;;         (if (is-some (contract-call? .fixed-weight-pool get-pool-exists collateral token u50000000 u50000000))
+                ;;             (try! (contract-call? .fixed-weight-pool get-y-given-x collateral token u50000000 u50000000 (+ dx balance-x (mul-down balance-y spot))))
+                ;;             (try! (contract-call? .fixed-weight-pool get-x-given-y token collateral u50000000 u50000000 (+ dx balance-x (mul-down balance-y spot))))
+                ;;         )
+                ;;     )
+                ;; )
             )
 
             (unwrap! (contract-call? collateral transfer-fixed dx-weighted tx-sender .alex-vault none) ERR-TRANSFER-FAILED)
@@ -1432,15 +1452,17 @@
         (   
             ;; gross amount * ltv / price = amount
             ;; gross amount = amount * price / ltv
-            ;;(memo-uint (buff-to-uint (unwrap! memo ERR-EXPIRY-IS-NONE)))        
-            (ltv (try! (get-ltv .token-usda .token-wstx memo-uint)))
-            (price (try! (contract-call? .yield-token-pool get-price memo-uint .yield-usda)))
-            (gross-amount (mul-up amount (div-down price ltv)))
+            ;;(memo-uint (buff-to-uint (unwrap! memo ERR-EXPIRY-IS-NONE)))
+            (ltv (try! (get-ltv .token-usda .token-wstx memo-uint))) ;; takes 0.11%, 1.96% Runtime
+            ;; (spot (try! (get-spot .token-usda .token-wstx)))
+            ;; (ltv (try! (get-ltv-with-spot .token-usda .token-wstx memo-uint spot)))
+            (price (try! (contract-call? .yield-token-pool get-price memo-uint .yield-usda))) ;; takes 0.17%, 2.14% RC
+            (gross-amount (mul-up amount (div-down price ltv))) ;; take 0.0%
             (minted-yield-token (get yield-token (try! (add-to-position .token-usda .token-wstx memo-uint .yield-usda .key-usda-wstx gross-amount))))
             (swapped-token (get dx (try! (contract-call? .yield-token-pool swap-y-for-x memo-uint .yield-usda .token-usda minted-yield-token none))))
         )
         ;; swap token to collateral so we can return flash-loan
-        ;;(try! (contract-call? .fixed-weight-pool swap-helper .token-usda .token-wstx u50000000 u50000000 swapped-token none))        
+        ;; (try! (contract-call? .fixed-weight-pool swap-helper .token-usda .token-wstx u50000000 u50000000 swapped-token none))        
         ;; (print { object: "flash-loan-user-margin-wstx-usda", action: "execute", data: gross-amount })
         (ok swapped-token)
     )

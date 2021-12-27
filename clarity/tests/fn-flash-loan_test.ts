@@ -71,9 +71,10 @@ Clarinet.test({
         result.expectOk().expectBool(true);
         result = CRPTest.createPool(deployer, usdaAddress, wbtcAddress, expiry, yieldusdaAddress, keyusdawbtcAddress, multisigncrpusdawbtcAddress, ltv_0, conversion_ltv, bs_vol, moving_average, token_to_maturity, ONE_8);
         result.expectOk().expectBool(true);
-        // Let's borrow 100 WSTX to lever up
+        // Let's borrow 1000 WSTX to lever up
         result = FLTest.flashLoan(wallet_5, loanuserAddress, wstxAddress, 1000*ONE_8, expiryBuff);
         result.expectOk();
+        console.log(result)
        // result = FLTest.flashLoan(wallet_5, attackerflash, attackercoin, 1, expiryBuff);
         //result.expectOk();
     },
