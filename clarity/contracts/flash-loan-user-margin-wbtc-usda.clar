@@ -16,10 +16,11 @@
             ;; gross amount = amount * price / ltv
             ;; buff to uint conversion
             (memo-uint (buff-to-uint (unwrap! memo ERR-EXPIRY-IS-NONE)))
-            (ltv (try! (contract-call? .collateral-rebalancing-pool get-ltv .token-usda .token-wbtc memo-uint)))
+            (spot (try! (contract-call? .collateral-rebalancing-pool get-spot .token-usda .token-wbtc)))
+            (ltv (try! (contract-call? .collateral-rebalancing-pool get-ltv-with-spot .token-usda .token-wbtc memo-uint spot)))
             (price (try! (contract-call? .yield-token-pool get-price memo-uint .yield-usda)))
             (gross-amount (mul-up amount (div-down price ltv)))            
-            (minted-yield-token (get yield-token (try! (contract-call? .collateral-rebalancing-pool add-to-position .token-usda .token-wbtc memo-uint .yield-usda .key-usda-wbtc gross-amount))))
+            (minted-yield-token (get yield-token (try! (contract-call? .collateral-rebalancing-pool add-to-position .token-usda .token-wbtc memo-uint .yield-usda .key-usda-wbtc gross-amount spot))))
             (swapped-token (get dx (try! (contract-call? .yield-token-pool swap-y-for-x memo-uint .yield-usda .token-usda minted-yield-token none))))
         )
         ;; swap token to collateral so we can return flash-loan

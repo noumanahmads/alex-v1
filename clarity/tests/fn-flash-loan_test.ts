@@ -74,7 +74,6 @@ Clarinet.test({
         // Let's borrow 1000 WSTX to lever up
         result = FLTest.flashLoan(wallet_5, loanuserAddress, wstxAddress, 1000*ONE_8, expiryBuff);
         result.expectOk();
-        console.log(result)
        // result = FLTest.flashLoan(wallet_5, attackerflash, attackercoin, 1, expiryBuff);
         //result.expectOk();
     },

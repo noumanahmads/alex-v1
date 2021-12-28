@@ -95,7 +95,7 @@ import {
       return block.receipts[0].result;
     }
   
-    addToPosition(user: Account, token: string, collateral: string, expiry: number, yieldToken: string, keyToken:string, dX: number) {
+    addToPosition(user: Account, token: string, collateral: string, expiry: number, yieldToken: string, keyToken:string, dX: number, spot: number) {
         let block = this.chain.mineBlock([
           Tx.contractCall("collateral-rebalancing-pool", "add-to-position", [
             types.principal(token),
@@ -103,13 +103,14 @@ import {
             types.uint(expiry),            
             types.principal(yieldToken),
             types.principal(keyToken),
-            types.uint(dX)
+            types.uint(dX),
+            types.uint(spot)
           ], user.address),
         ]);
         return block.receipts[0].result;
       }
 
-      addToPositionAndSwitch(user: Account, token: string, collateral: string, expiry: number, yieldToken: string, keyToken: string, dX: number) {
+      addToPositionAndSwitch(user: Account, token: string, collateral: string, expiry: number, yieldToken: string, keyToken: string, dX: number, spot: number) {
         let block = this.chain.mineBlock([
           Tx.contractCall("collateral-rebalancing-pool", "add-to-position-and-switch", [
             types.principal(token),
@@ -117,59 +118,64 @@ import {
             types.uint(expiry),            
             types.principal(yieldToken),
             types.principal(keyToken),
-            types.uint(dX)
+            types.uint(dX),
+            types.uint(spot)
           ], user.address),
         ]);
         return block.receipts[0].result;        
       }
   
-      reducePositionYield(user: Account, token: string, collateral: string, expiry: number, yieldToken: string, percent: number) {
+      reducePositionYield(user: Account, token: string, collateral: string, expiry: number, yieldToken: string, percent: number, spot: number) {
         let block = this.chain.mineBlock([
           Tx.contractCall("collateral-rebalancing-pool", "reduce-position-yield", [
             types.principal(token),
             types.principal(collateral),
             types.uint(expiry),
             types.principal(yieldToken),
-            types.uint(percent)
+            types.uint(percent),
+            types.uint(spot)
           ], user.address),
         ]);
         return block.receipts[0].result;
       }
 
-      reducePositionKey(user: Account, token: string, collateral: string, expiry: number, keyToken: string, percent: number) {
+      reducePositionKey(user: Account, token: string, collateral: string, expiry: number, keyToken: string, percent: number, spot: number) {
         let block = this.chain.mineBlock([
           Tx.contractCall("collateral-rebalancing-pool", "reduce-position-key", [
             types.principal(token),
             types.principal(collateral),
             types.uint(expiry),
             types.principal(keyToken),
-            types.uint(percent)
+            types.uint(percent),
+            types.uint(spot)
           ], user.address),
         ]);
         return block.receipts[0].result;
       }
   
-    swapXForY(user: Account, token: string, collateral: string, expiry: number, dX: number, dy_min: number) {
+    swapXForY(user: Account, token: string, collateral: string, expiry: number, dX: number, dy_min: number, spot: number) {
       let block = this.chain.mineBlock([
         Tx.contractCall("collateral-rebalancing-pool", "swap-x-for-y", [
           types.principal(token),
           types.principal(collateral),
           types.uint(expiry),
           types.uint(dX),
-          types.some(types.uint(dy_min))
+          types.some(types.uint(dy_min)),
+          types.uint(spot)
         ], user.address),
       ]);
       return block.receipts[0].result;
     }
   
-    swapYForX(user: Account, token: string, collateral: string, expiry: number, dY: number, min_dx: number) {
+    swapYForX(user: Account, token: string, collateral: string, expiry: number, dY: number, min_dx: number, spot: number) {
         let block = this.chain.mineBlock([
           Tx.contractCall("collateral-rebalancing-pool", "swap-y-for-x", [
             types.principal(token),
             types.principal(collateral),
             types.uint(expiry),
             types.uint(dY),
-            types.some(types.uint(min_dx))
+            types.some(types.uint(min_dx)),
+            types.uint(spot)
           ], user.address),
         ]);
         return block.receipts[0].result;
