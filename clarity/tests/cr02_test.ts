@@ -218,11 +218,6 @@ import {
         types.principal(deployer.address),
       ], deployer.address);
       call.result.expectOk().expectUint(9991000000000);
-
-
-      call = await CRPTest.getSpot(wbtcAddress, usdaAddress);
-      call.result.expectOk();
-      let spot = Number((call.result.replace(/\D/g, "")));
   
       // deployer burns all the yield tokens
       result = CRPTest.reducePositionYield(
@@ -232,7 +227,6 @@ import {
         expiry,
         yieldwbtcAddress,
         ONE_8,
-        spot
       );
       position = result.expectOk().expectTuple();
       position["dx"].expectUint(0);
@@ -263,7 +257,6 @@ import {
         expiry, 
         keywbtcAddress,
         ONE_8,
-        spot
       );
       position = result.expectOk().expectTuple();
       position["dx"].expectUint(0);

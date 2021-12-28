@@ -15,8 +15,7 @@
 (define-public (roll-position (token <ft-trait>) (collateral <ft-trait>) (the-key-token <sft-trait>) (flash-loan-user <flash-loan-user-trait>) (expiry uint) (expiry-to-roll uint))
     (let
         (
-            (spot (try! (contract-call? .collateral-rebalancing-pool get-spot token collateral)))
-            (reduce-data (try! (contract-call? .collateral-rebalancing-pool reduce-position-key token collateral expiry the-key-token ONE_8 spot)))
+            (reduce-data (try! (contract-call? .collateral-rebalancing-pool reduce-position-key token collateral expiry the-key-token ONE_8)))
             (collateral-amount (get dx reduce-data))
             (token-amount (get dy reduce-data))
             (token-to-collateral 

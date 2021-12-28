@@ -67,9 +67,18 @@ Clarinet.test({
         result.expectOk().expectBool(true);
         result = YTPTest.createPool(deployer, expiry, yieldusdaAddress, usdaAddress, ytpyieldusdaAddress, multisigytpyieldusda, 500000e+8, 500000e+8);
         result.expectOk().expectBool(true);
-        result = CRPTest.createPool(deployer, usdaAddress, wstxAddress, expiry, yieldusdaAddress, keyusdaAddress, multisigncrpusdaAddress, ltv_0, conversion_ltv, bs_vol, moving_average, token_to_maturity, 100 * ONE_8);
+        
+        let call = await CRPTest.getSpot(usdaAddress, wstxAddress);
+        call.result.expectOk();
+        let spot = Number((call.result.replace(/\D/g, "")));
+        
+        result = CRPTest.createPoolWithSpot(deployer, usdaAddress, wstxAddress, expiry, yieldusdaAddress, keyusdaAddress, multisigncrpusdaAddress, ltv_0, conversion_ltv, bs_vol, moving_average, token_to_maturity, 100 * ONE_8, spot);
         result.expectOk().expectBool(true);
-        result = CRPTest.createPool(deployer, usdaAddress, wbtcAddress, expiry, yieldusdaAddress, keyusdawbtcAddress, multisigncrpusdawbtcAddress, ltv_0, conversion_ltv, bs_vol, moving_average, token_to_maturity, ONE_8);
+
+        call = await CRPTest.getSpot(usdaAddress, wbtcAddress);
+        call.result.expectOk();
+        spot = Number((call.result.replace(/\D/g, "")));
+        result = CRPTest.createPoolWithSpot(deployer, usdaAddress, wbtcAddress, expiry, yieldusdaAddress, keyusdawbtcAddress, multisigncrpusdawbtcAddress, ltv_0, conversion_ltv, bs_vol, moving_average, token_to_maturity, ONE_8, spot);
         result.expectOk().expectBool(true);
         // Let's borrow 1000 WSTX to lever up
         result = FLTest.flashLoan(wallet_5, loanuserAddress, wstxAddress, 1000*ONE_8, expiryBuff);
