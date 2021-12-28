@@ -267,10 +267,11 @@
                 (
                     ;; assume 15secs per block 
                     (t (div-down (- expiry now) (* u2102400 ONE_8)))
-                    (t-2 (div-down (- expiry now) (get token-to-maturity pool)))
+                    (t-2 (div-down (- expiry now) spot))
 
                     ;; we calculate d1 first
-                    (spot-term (div-up (try! (get-spot token collateral)) strike))
+                    ;; get-spot is also being passed as parameter
+                    (spot-term (div-up spot strike))
                     (pow-bs-vol (div-up (mul-down bs-vol bs-vol) u200000000))
                     (vol-term (mul-up t pow-bs-vol))
                     (sqrt-t (pow-down t u50000000))
