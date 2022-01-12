@@ -101,13 +101,9 @@
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
   (begin
     (asserts! (is-eq sender tx-sender) ERR-NOT-AUTHORIZED)
-    (match (ft-transfer? fwp-wstx-usda-50-50 amount sender recipient)
-      response (begin
-        (print memo)
-        (ok response)
-      )
-      error (err error)
-    )
+    (try! (ft-transfer? fwp-wstx-usda-50-50 amount sender recipient))
+    (match memo to-print (print to-print) 0x)
+    (ok true)
   )
 )
 
@@ -118,7 +114,7 @@
 ;; @returns (response bool uint)
 (define-public (mint (amount uint) (recipient principal))
   (begin
-    (try! (check-is-approved contract-caller))
+    (try! (check-is-approved tx-sender))
     (ft-mint? fwp-wstx-usda-50-50 amount recipient)
   )
 )
@@ -130,7 +126,7 @@
 ;; @returns (response bool uint)
 (define-public (burn (amount uint) (sender principal))
   (begin
-    (try! (check-is-approved contract-caller))
+    (try! (check-is-approved tx-sender))
     (ft-burn? fwp-wstx-usda-50-50 amount sender)
   )
 )

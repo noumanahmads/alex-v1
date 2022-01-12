@@ -2,7 +2,7 @@
 (impl-trait .trait-sip-010.sip-010-trait)
 
 
-(define-fungible-token lottery-t-alex)
+(define-fungible-token xbtc)
 
 (define-data-var token-uri (string-utf8 256) u"")
 (define-data-var contract-owner principal tx-sender)
@@ -10,7 +10,6 @@
 
 ;; errors
 (define-constant ERR-NOT-AUTHORIZED (err u1000))
-(define-constant ERR-TRANSFER-FAILED (err u3000))
 
 (define-read-only (get-contract-owner)
   (ok (var-get contract-owner))
@@ -23,6 +22,10 @@
   )
 )
 
+;; @desc check-is-approved
+;; @restricted Contract-Owner
+;; @params sender
+;; @returns (response bool)
 (define-private (check-is-approved (sender principal))
   (ok (asserts! (or (default-to false (map-get? approved-contracts sender)) (is-eq sender (var-get contract-owner))) ERR-NOT-AUTHORIZED))
 )
@@ -39,26 +42,42 @@
 ;; SIP-10 Functions
 ;; ---------------------------------------------------------
 
+;; @desc get-total-supply
+;; @returns (response uint)
 (define-read-only (get-total-supply)
-  (ok (ft-get-supply lottery-t-alex))
+  (ok (ft-get-supply xbtc))
 )
 
+;; @desc get-name
+;; @returns (response string-utf8)
 (define-read-only (get-name)
-  (ok "lottery-t-alex")
+  (ok "xbtc")
 )
 
+;; @desc get-symbol
+;; @returns (response string-utf8)
 (define-read-only (get-symbol)
-  (ok "lottery-t-alex")
+  (ok "xbtc")
 )
 
+;; @desc get-decimals
+;; @returns (response uint)
 (define-read-only (get-decimals)
-  (ok u8)
+   	(ok u8)
 )
 
+;; @desc get-balance
+;; @params token-id
+;; @params who
+;; @returns (response uint)
 (define-read-only (get-balance (account principal))
-  (ok (ft-get-balance lottery-t-alex account))
+  (ok (ft-get-balance xbtc account))
 )
 
+;; @desc set-token-uri
+;; @restricted Contract-Owner
+;; @params value
+;; @returns (response bool)
 (define-public (set-token-uri (value (string-utf8 256)))
   (begin
     (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
@@ -66,14 +85,24 @@
   )
 )
 
+;; @desc get-token-uri 
+;; @params token-id
+;; @returns (response none)
 (define-read-only (get-token-uri)
   (ok (some (var-get token-uri)))
 )
 
+;; @desc transfer
+;; @restricted sender
+;; @params token-id 
+;; @params amount
+;; @params sender
+;; @params recipient
+;; @returns (response boolean)
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
   (begin
     (asserts! (is-eq sender tx-sender) ERR-NOT-AUTHORIZED)
-    (match (ft-transfer? lottery-t-alex amount sender recipient)
+    (match (ft-transfer? xbtc amount sender recipient)
       response (begin
         (print memo)
         (ok response)
@@ -83,91 +112,95 @@
   )
 )
 
+;; @desc mint
+;; @restricted ContractOwner/Approved Contract
+;; @params token-id
+;; @params amount
+;; @params recipient
+;; @returns (response boolean)
 (define-public (mint (amount uint) (recipient principal))
   (begin
     (try! (check-is-approved tx-sender))
-    (ft-mint? lottery-t-alex amount recipient)
+    (ft-mint? xbtc amount recipient)
   )
 )
 
+;; @desc burn
+;; @restricted ContractOwner/Approved Contract
+;; @params token-id
+;; @params amount
+;; @params sender
+;; @returns (response boolean)
 (define-public (burn (amount uint) (sender principal))
   (begin
     (try! (check-is-approved tx-sender))
-    (ft-burn? lottery-t-alex amount sender)
+    (ft-burn? xbtc amount sender)
   )
 )
 
 (define-constant ONE_8 (pow u10 u8))
 
+;; @desc pow-decimals
+;; @returns uint
 (define-private (pow-decimals)
   (pow u10 (unwrap-panic (get-decimals)))
 )
 
+;; @desc fixed-to-decimals
+;; @params amount
+;; @returns uint
 (define-read-only (fixed-to-decimals (amount uint))
   (/ (* amount (pow-decimals)) ONE_8)
 )
 
+;; @desc decimals-to-fixed 
+;; @params amount
+;; @returns uint
 (define-private (decimals-to-fixed (amount uint))
   (/ (* amount ONE_8) (pow-decimals))
 )
 
+;; @desc get-total-supply-fixed
+;; @params token-id
+;; @returns (response uint)
 (define-read-only (get-total-supply-fixed)
-  (ok (decimals-to-fixed (ft-get-supply lottery-t-alex)))
+  (ok (decimals-to-fixed (ft-get-supply xbtc)))
 )
 
+;; @desc get-balance-fixed
+;; @params token-id
+;; @params who
+;; @returns (response uint)
 (define-read-only (get-balance-fixed (account principal))
-  (ok (decimals-to-fixed (ft-get-balance lottery-t-alex account)))
+  (ok (decimals-to-fixed (ft-get-balance xbtc account)))
 )
 
+;; @desc transfer-fixed
+;; @params token-id
+;; @params amount
+;; @params sender
+;; @params recipient
+;; @returns (response boolean)
 (define-public (transfer-fixed (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
   (transfer (fixed-to-decimals amount) sender recipient memo)
 )
 
+;; @desc mint-fixed
+;; @params token-id
+;; @params amount
+;; @params recipient
+;; @returns (response boolean)
 (define-public (mint-fixed (amount uint) (recipient principal))
   (mint (fixed-to-decimals amount) recipient)
 )
 
+;; @desc burn-fixed
+;; @params token-id
+;; @params amount
+;; @params sender
+;; @returns (response boolean)
 (define-public (burn-fixed (amount uint) (sender principal))
   (burn (fixed-to-decimals amount) sender)
 )
 
-;; @desc check-err
-;; @params result 
-;; @params prior
-;; @returns (response bool uint)
-(define-private (check-err (result (response bool uint)) (prior (response bool uint)))
-    (match prior 
-        ok-value result
-        err-value (err err-value)
-    )
-)
-
-;; @desc mint-from-tuple
-;; @params recipient; tuple
-;; returns (response bool uint)
-(define-private (mint-from-tuple (recipient { to: principal, amount: uint }))
-  (ok (unwrap! (mint-fixed (get amount recipient) (get to recipient)) ERR-TRANSFER-FAILED))
-)
-
-(define-private (transfer-from-tuple (recipient { to: principal, amount: uint }))
-  (ok (unwrap! (transfer-fixed (get amount recipient) tx-sender (get to recipient) none) ERR-TRANSFER-FAILED))
-)
-
-;; @desc mint-many
-;; @params recipient; list of tuple
-;; returns (bool uint)
-(define-public (mint-many (recipients (list 200 { to: principal, amount: uint })))
-  (begin
-    (try! (check-is-approved tx-sender))
-    (fold check-err (map mint-from-tuple recipients) (ok true))
-  )
-)
-
-(define-public (send-many (recipients (list 200 { to: principal, amount: uint})))
-  (begin
-    (try! (check-is-approved tx-sender))
-    (fold check-err (map transfer-from-tuple recipients) (ok true))
-  )
-)
-
-(map-set approved-contracts .alex-launchpad true)
+(map-set approved-contracts .faucet true)

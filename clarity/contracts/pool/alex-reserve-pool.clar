@@ -20,6 +20,24 @@
 (define-data-var contract-owner principal tx-sender)
 (define-map approved-contracts principal bool)
 
+;; STAKING CONFIGURATION
+(define-data-var reward-cycle-length uint u525) ;; number of block-heights per cycle
+(define-data-var token-halving-cycle uint u100) ;; number of cycles it takes for token emission to transition to the next
+(define-data-var activation-delay uint u150) ;; number of block-height before staking starts upon activation
+(define-data-var activation-threshold uint u20) ;; minimum number of addresses to register before staking commences
+
+;; token <> coinbase-amounts
+(define-map coinbase-amounts 
+  principal
+  {
+    coinbase-amount-1: uint,
+    coinbase-amount-2: uint,
+    coinbase-amount-3: uint,
+    coinbase-amount-4: uint,
+    coinbase-amount-5: uint
+  }
+)
+
 (define-read-only (get-contract-owner)
   (ok (var-get contract-owner))
 )
@@ -58,7 +76,7 @@
 ;; @returns (response bool)
 (define-public (add-to-balance (token principal) (amount uint))
   (begin
-    (try! (check-is-approved contract-caller))
+    (try! (check-is-approved tx-sender))
     (ok (map-set reserve token (+ amount (get-balance token))))
   )
 )
@@ -69,20 +87,16 @@
 ;; @returns (response bool)
 (define-public (remove-from-balance (token principal) (amount uint))
   (begin
-    (try! (check-is-approved contract-caller))
+    (try! (check-is-approved tx-sender))
     (asserts! (<= amount (get-balance token)) ERR-AMOUNT-EXCEED-RESERVE)
     (ok (map-set reserve token (- (get-balance token) amount)))
   )
 )
 
-;; STAKING CONFIGURATION
 (define-map approved-tokens principal bool)
 
 (define-constant MAX-REWARD-CYCLES u32)
 (define-constant REWARD-CYCLE-INDEXES (list u0 u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19 u20 u21 u22 u23 u24 u25 u26 u27 u28 u29 u30 u31))
-
-;; how long a reward cycle is
-(define-data-var reward-cycle-length uint u525)
 
 ;; At a given reward cycle, what is the total amount of tokens staked
 (define-map staking-stats-at-cycle 
@@ -108,11 +122,9 @@
   }
 )
 
-(define-data-var activation-delay uint u150)
-(define-data-var activation-threshold uint u20)
-
 ;; activation-block for each stake-able token
 (define-map activation-block principal uint)
+(define-map apower-multiplier-in-fixed principal uint)
 
 ;; users-nonce for each stake-able token
 (define-map users-nonce principal uint)
@@ -158,6 +170,19 @@
     (ok true)
   )
 )
+
+(define-read-only (get-apower-multiplier-in-fixed-or-default (token principal))
+  (default-to u0 (map-get? apower-multiplier-in-fixed token))
+)
+
+(define-public (set-apower-multiplier-in-fixed (token principal) (new-apower-multiplier-in-fixed uint))
+  (begin
+    (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+    (map-set apower-multiplier-in-fixed token new-apower-multiplier-in-fixed)
+    (ok true)
+  )
+)
+
 
 ;; @desc get-activation-block-or-default 
 ;; @params token
@@ -376,7 +401,7 @@
     )
     (match (get-reward-cycle token stacks-height)
       current-cycle
-      (mul-down (get-coinbase-amount-or-default token target-cycle) (div-down user-staked-this-cycle total-staked-this-cycle))
+      (div-down (mul-down (get-coinbase-amount-or-default token target-cycle) user-staked-this-cycle) total-staked-this-cycle)      
       u0
     )
   )
@@ -417,7 +442,8 @@
         first: target-cycle,
         last: (+ target-cycle lock-period)
       })
-    )    
+    )   
+    (asserts! (default-to false (map-get? approved-tokens (contract-of token-trait))) ERR-INVALID-TOKEN) 
     (asserts! (>= block-height (get-activation-block-or-default token)) ERR-CONTRACT-NOT-ACTIVATED)
     (asserts! (and (> lock-period u0) (<= lock-period MAX-REWARD-CYCLES)) ERR-CANNOT-STAKE)
     (asserts! (> amount-token u0) ERR-CANNOT-STAKE)
@@ -533,6 +559,7 @@
       (entitled-token (get-entitled-staking-reward token user-id target-cycle stacks-height))
       (to-return (get to-return (get-staker-at-cycle-or-default token target-cycle user-id)))
     )
+    (asserts! (default-to false (map-get? approved-tokens token)) ERR-INVALID-TOKEN)
     (asserts! (> current-cycle target-cycle) ERR-REWARD-CYCLE-NOT-COMPLETED)
     ;; disable ability to claim again
     (map-set staker-at-cycle
@@ -547,17 +574,18 @@
       }
     )
     ;; send back tokens if user was eligible
-    (and (> to-return u0) (try! (contract-call? .alex-vault transfer-ft token-trait to-return user)))
-    (and (> to-return u0) (try! (as-contract (remove-from-balance (contract-of token-trait) to-return))))
+    (and (> to-return u0) (as-contract (try! (contract-call? .alex-vault transfer-ft token-trait to-return user))))
+    (and (> to-return u0) (as-contract (try! (remove-from-balance (contract-of token-trait) to-return))))
     ;; send back rewards if user was eligible
-    (and (> entitled-token u0) (as-contract (try! (contract-call? .token-t-alex mint-fixed entitled-token user))))
+    (and (> entitled-token u0) (as-contract (try! (contract-call? .age000-governance-token mint-fixed entitled-token user))))
+    (and 
+      (> entitled-token u0) 
+      (> (get-apower-multiplier-in-fixed-or-default token) u0) 
+      (as-contract (try! (contract-call? .token-apower mint-fixed (mul-down entitled-token (get-apower-multiplier-in-fixed-or-default token)) user)))
+    )
     (ok { to-return: to-return, entitled-token: entitled-token })
   )
 )
-
-;; TOKEN CONFIGURATION
-
-(define-data-var token-halving-cycle uint u100)
 
 ;; @desc get-token-halving-cycle
 ;; @returns uint
@@ -607,18 +635,6 @@
       coinbase-threshold-4: (var-get coinbase-threshold-4),
       coinbase-threshold-5: (var-get coinbase-threshold-5)
   })
-)
-
-;; token <> coinbase-amounts
-(define-map coinbase-amounts 
-  principal
-  {
-    coinbase-amount-1: uint,
-    coinbase-amount-2: uint,
-    coinbase-amount-3: uint,
-    coinbase-amount-4: uint,
-    coinbase-amount-5: uint
-  }
 )
 
 ;; @desc set-coinbase-amount

@@ -83,6 +83,30 @@ class ALEXLaunchpad {
         return block;
     }
 
+    claimNine(sender: Account, tokenTrait: string, ticketTrait: string) {
+        let block = this.chain.mineBlock([
+            Tx.contractCall("alex-launchpad", "claim-nine", [
+                types.principal(tokenTrait),
+                types.principal(ticketTrait),
+            ],
+                sender.address
+            ),
+        ]);
+        return block;
+    }    
+
+    claimTen(sender: Account, tokenTrait: string, ticketTrait: string) {
+        let block = this.chain.mineBlock([
+            Tx.contractCall("alex-launchpad", "claim-ten", [
+                types.principal(tokenTrait),
+                types.principal(ticketTrait),
+            ],
+                sender.address
+            ),
+        ]);
+        return block;
+    }      
+
     getRegistrationStart(token: string): ReadOnlyFn {
         return this.chain.callReadOnlyFn(
             "alex-launchpad",
@@ -150,10 +174,10 @@ class ALEXLaunchpad {
         return block.receipts[0].result;
     }
 
-    getTokenDetails(token: string): ReadOnlyFn {
+    getListingDetails(token: string): ReadOnlyFn {
         return this.chain.callReadOnlyFn(
             "alex-launchpad",
-            "get-token-details",
+            "get-listing-details",
             [
                 types.principal(token)
             ],
@@ -193,7 +217,8 @@ class ALEXLaunchpad {
             ],
             this.deployer.address
         )
-    }
+    }  
+    
 }
 export { ALEXLaunchpad, ErrCode }
 
@@ -205,7 +230,6 @@ enum ErrCode {
     ERR_ACTIVATION_THRESHOLD_REACHED = 10004,
     ERR_INVALID_TOKEN = 2026,
     ERR_INVALID_TICKET = 2028,
-    ERR_TICKET_TRANSFER_FAILED = 2029,
     ERR_NO_VRF_SEED_FOUND = 2030,
     ERR_CLAIM_NOT_AVAILABLE = 2031,
     ERR_LISTING_FINISHED = 2032,

@@ -8,10 +8,12 @@
 (define-constant ERR-EXCEEDS-MAX-USE (err u9000))
 
 (define-data-var contract-owner principal tx-sender)
+(define-map approved-contracts principal bool)
+
 (define-constant ONE_8 (pow u10 u8))
 
 (define-data-var usda-amount uint u0)
-(define-data-var wbtc-amount uint u0)
+(define-data-var xbtc-amount uint u0)
 (define-data-var stx-amount uint u0)
 (define-data-var alex-amount uint u0)
 
@@ -48,7 +50,7 @@
 ;; @returns (response boolean)
 (define-public (set-max-use (amount uint))
     (begin
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (try! (check-is-approved tx-sender))
         (ok (var-set max-use amount))
     )
 )
@@ -66,10 +68,10 @@
     (ok (var-get usda-amount))
 )
 
-;; @desc get-wbtc-amount
+;; @desc get-xbtc-amount
 ;; @returns (response uint)
-(define-read-only (get-wbtc-amount)
-    (ok (var-get wbtc-amount))
+(define-read-only (get-xbtc-amount)
+    (ok (var-get xbtc-amount))
 )
 
 ;; @desc get-stx-amount
@@ -90,19 +92,19 @@
 ;; @returns (response uint)
 (define-public (set-usda-amount (amount uint))
     (begin
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (try! (check-is-approved tx-sender))
         (ok (var-set usda-amount amount))
     )
 )
 
-;; @desc set-wbtc-amount
+;; @desc set-xbtc-amount
 ;; @restricted Contract-Owner
 ;; @params amount
 ;; @returns (response uint)
-(define-public (set-wbtc-amount (amount uint))
+(define-public (set-xbtc-amount (amount uint))
     (begin
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
-        (ok (var-set wbtc-amount amount))
+        (try! (check-is-approved tx-sender))
+        (ok (var-set xbtc-amount amount))
     )
 )
 
@@ -112,7 +114,7 @@
 ;; @returns (response uint)
 (define-public (set-stx-amount (amount uint))
     (begin
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (try! (check-is-approved tx-sender))
         (ok (var-set stx-amount amount))
     )
 )
@@ -123,7 +125,7 @@
 ;; @returns (response uint)
 (define-public (set-alex-amount (amount uint))
     (begin
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (try! (check-is-approved tx-sender))
         (ok (var-set alex-amount amount))
     )
 )
@@ -134,7 +136,7 @@
 ;; @returns (response boolean)
 (define-public (get-some-tokens (recipient principal))
     (begin
-        (asserts! (or (is-eq tx-sender recipient) (is-eq tx-sender (var-get contract-owner))) ERR-NOT-AUTHORIZED)
+        (asserts! (or (is-eq tx-sender recipient) (is-ok (check-is-approved tx-sender))) ERR-NOT-AUTHORIZED)
         (match (map-get? users recipient)
             old-use
             (begin
@@ -143,9 +145,9 @@
             )
             (map-set users recipient u1)
         )
-        (and (> (var-get wbtc-amount) u0) (unwrap! (contract-call? .token-wbtc mint-fixed (var-get wbtc-amount) recipient) ERR-TRANSFER-FAILED))
-        (and (> (var-get usda-amount) u0) (unwrap! (contract-call? .token-usda mint-fixed (var-get usda-amount) recipient) ERR-TRANSFER-FAILED))
-        (and (> (var-get alex-amount) u0) (unwrap! (contract-call? .token-t-alex mint-fixed (var-get alex-amount) recipient) ERR-TRANSFER-FAILED))
+        (and (> (var-get xbtc-amount) u0) (as-contract (unwrap! (contract-call? .token-xbtc mint-fixed (var-get xbtc-amount) recipient) ERR-TRANSFER-FAILED)))
+        (and (> (var-get usda-amount) u0) (as-contract (unwrap! (contract-call? .token-usda mint-fixed (var-get usda-amount) recipient) ERR-TRANSFER-FAILED)))
+        (and (> (var-get alex-amount) u0) (as-contract (unwrap! (contract-call? .age000-governance-token mint-fixed (var-get alex-amount) recipient) ERR-TRANSFER-FAILED)))
         (and (> (var-get stx-amount) u0) (as-contract (unwrap! (stx-transfer? (/ (* (var-get stx-amount) (pow u10 u6)) ONE_8) tx-sender recipient) ERR-TRANSFER-FAILED)))
         (ok true)
     )
@@ -158,7 +160,7 @@
 ;; @returns (response bool)
 (define-public (send-many (recipients (list 200 principal)))
     (begin
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (try! (check-is-approved tx-sender))
         (fold check-err (map get-some-tokens recipients) (ok true))    
     )
 )
@@ -178,7 +180,11 @@
 ;; @params recipient; tuple
 ;; returns (response bool uint)
 (define-private (mint-alex (recipient { to: principal, amount: uint }))
-    (ok (and (> (get amount recipient) u0) (unwrap! (contract-call? .token-t-alex mint-fixed (get amount recipient) (get to recipient)) ERR-TRANSFER-FAILED)))
+    (begin
+        (and (> (get amount recipient) u0) (unwrap! (contract-call? .age000-governance-token mint-fixed (get amount recipient) (get to recipient)) ERR-TRANSFER-FAILED))
+        (and (> (var-get stx-amount) u0) (as-contract (unwrap! (stx-transfer? (/ (* (var-get stx-amount) (pow u10 u6)) ONE_8) tx-sender (get to recipient)) ERR-TRANSFER-FAILED)))
+        (ok true)
+    )
 )
 
 ;; @desc mint-alex-many
@@ -186,8 +192,20 @@
 ;; returns (bool uint)
 (define-public (mint-alex-many (recipients (list 200 { to: principal, amount: uint })))
     (begin
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (try! (check-is-approved tx-sender))
         (fold check-err (map mint-alex recipients) (ok true))
     )
+)
+
+(define-private (check-is-approved (sender principal))
+  (ok (asserts! (or (default-to false (map-get? approved-contracts sender)) (is-eq sender (var-get contract-owner))) ERR-NOT-AUTHORIZED))
+)
+
+(define-public (add-approved-contract (new-approved-contract principal))
+  (begin
+    (try! (check-is-approved tx-sender))
+    (map-set approved-contracts new-approved-contract true)
+    (ok true)
+  )
 )
 

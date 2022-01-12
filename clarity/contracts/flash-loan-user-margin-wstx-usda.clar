@@ -3,6 +3,7 @@
 
 (define-constant ONE_8 (pow u10 u8))
 (define-constant ERR-EXPIRY-IS-NONE (err u2027))
+(define-constant ERR-INVALID-TOKEN (err u2026))
 
 ;; @desc execute
 ;; @params token ; ft-trait
@@ -22,6 +23,7 @@
             ;; (swapped-token (get dx (try! (contract-call? .yield-token-pool swap-y-for-x memo-uint .yield-usda .token-usda minted-yield-token none))))
             (swapped-token (try! (contract-call? .collateral-rebalancing-pool get-swapped-token token amount memo-uint))) ;;3.15% to 3.11%
         )
+        (asserts! (is-eq .token-wstx (contract-of token)) ERR-INVALID-TOKEN)
         ;; swap token to collateral so we can return flash-loan
         (try! (contract-call? .fixed-weight-pool swap-helper .token-usda .token-wstx u50000000 u50000000 swapped-token none)) ;; 3.11 - 2.67 = 0.44%
         (print { object: "flash-loan-user-margin-wstx-usda", action: "execute", data: u1000 })

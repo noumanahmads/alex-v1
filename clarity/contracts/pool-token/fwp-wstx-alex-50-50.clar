@@ -2,7 +2,7 @@
 (impl-trait .trait-sip-010.sip-010-trait)
 
 
-(define-fungible-token wbtc)
+(define-fungible-token fwp-wstx-alex-50-50)
 
 (define-data-var token-uri (string-utf8 256) u"")
 (define-data-var contract-owner principal tx-sender)
@@ -23,9 +23,9 @@
 )
 
 ;; @desc check-is-approved
-;; @restricted Contract-Owner
+;; @restricted Approved-Contracts/Contract-Owner
 ;; @params sender
-;; @returns (response bool)
+;; @returns (response boolean)
 (define-private (check-is-approved (sender principal))
   (ok (asserts! (or (default-to false (map-get? approved-contracts sender)) (is-eq sender (var-get contract-owner))) ERR-NOT-AUTHORIZED))
 )
@@ -45,33 +45,32 @@
 ;; @desc get-total-supply
 ;; @returns (response uint)
 (define-read-only (get-total-supply)
-  (ok (ft-get-supply wbtc))
+  (ok (ft-get-supply fwp-wstx-alex-50-50))
 )
 
 ;; @desc get-name
 ;; @returns (response string-utf8)
 (define-read-only (get-name)
-  (ok "wbtc")
+  (ok "fwp-wstx-alex-50-50")
 )
 
 ;; @desc get-symbol
 ;; @returns (response string-utf8)
 (define-read-only (get-symbol)
-  (ok "wbtc")
+  (ok "fwp-wstx-alex-50-50")
 )
 
 ;; @desc get-decimals
 ;; @returns (response uint)
 (define-read-only (get-decimals)
-   	(ok u8)
+  (ok u8)
 )
 
 ;; @desc get-balance
-;; @params token-id
-;; @params who
+;; @params account
 ;; @returns (response uint)
 (define-read-only (get-balance (account principal))
-  (ok (ft-get-balance wbtc account))
+  (ok (ft-get-balance fwp-wstx-alex-50-50 account))
 )
 
 ;; @desc set-token-uri
@@ -85,56 +84,49 @@
   )
 )
 
-;; @desc get-token-uri 
-;; @params token-id
-;; @returns (response none)
+;; @desc get-token-uri
+;; @returns (response some string-utf-8)
 (define-read-only (get-token-uri)
   (ok (some (var-get token-uri)))
 )
 
 ;; @desc transfer
-;; @restricted sender
-;; @params token-id 
+;; @restricted sender; tx-sender should be sender
 ;; @params amount
 ;; @params sender
 ;; @params recipient
-;; @returns (response boolean)
+;; @params memo; expiry
+;; @returns (response bool uint)/ error
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
   (begin
     (asserts! (is-eq sender tx-sender) ERR-NOT-AUTHORIZED)
-    (match (ft-transfer? wbtc amount sender recipient)
-      response (begin
-        (print memo)
-        (ok response)
-      )
-      error (err error)
-    )
+    (try! (ft-transfer? fwp-wstx-alex-50-50 amount sender recipient))
+    (match memo to-print (print to-print) 0x)
+    (ok true)
   )
 )
 
 ;; @desc mint
-;; @restricted ContractOwner/Approved Contract
-;; @params token-id
+;; @restricted recipient; tx-sender should be recipient
 ;; @params amount
 ;; @params recipient
-;; @returns (response boolean)
+;; @returns (response bool uint)
 (define-public (mint (amount uint) (recipient principal))
   (begin
-    (try! (check-is-approved contract-caller))
-    (ft-mint? wbtc amount recipient)
+    (try! (check-is-approved tx-sender))
+    (ft-mint? fwp-wstx-alex-50-50 amount recipient)
   )
 )
 
 ;; @desc burn
-;; @restricted ContractOwner/Approved Contract
-;; @params token-id
+;; @restricted sender; tx-sender should be sender
 ;; @params amount
 ;; @params sender
-;; @returns (response boolean)
+;; @returns (response bool uint)
 (define-public (burn (amount uint) (sender principal))
   (begin
-    (try! (check-is-approved contract-caller))
-    (ft-burn? wbtc amount sender)
+    (try! (check-is-approved tx-sender))
+    (ft-burn? fwp-wstx-alex-50-50 amount sender)
   )
 )
 
@@ -164,7 +156,7 @@
 ;; @params token-id
 ;; @returns (response uint)
 (define-read-only (get-total-supply-fixed)
-  (ok (decimals-to-fixed (ft-get-supply wbtc)))
+  (ok (decimals-to-fixed (ft-get-supply fwp-wstx-alex-50-50)))
 )
 
 ;; @desc get-balance-fixed
@@ -172,7 +164,7 @@
 ;; @params who
 ;; @returns (response uint)
 (define-read-only (get-balance-fixed (account principal))
-  (ok (decimals-to-fixed (ft-get-balance wbtc account)))
+  (ok (decimals-to-fixed (ft-get-balance fwp-wstx-alex-50-50 account)))
 )
 
 ;; @desc transfer-fixed
@@ -180,7 +172,7 @@
 ;; @params amount
 ;; @params sender
 ;; @params recipient
-;; @returns (response boolean)
+;; @returns (response bool)
 (define-public (transfer-fixed (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
   (transfer (fixed-to-decimals amount) sender recipient memo)
 )
@@ -189,7 +181,7 @@
 ;; @params token-id
 ;; @params amount
 ;; @params recipient
-;; @returns (response boolean)
+;; @returns (response bool)
 (define-public (mint-fixed (amount uint) (recipient principal))
   (mint (fixed-to-decimals amount) recipient)
 )
@@ -198,9 +190,9 @@
 ;; @params token-id
 ;; @params amount
 ;; @params sender
-;; @returns (response boolean)
+;; @returns (response bool)
 (define-public (burn-fixed (amount uint) (sender principal))
   (burn (fixed-to-decimals amount) sender)
 )
 
-(map-set approved-contracts .faucet true)
+(map-set approved-contracts .fixed-weight-pool true)

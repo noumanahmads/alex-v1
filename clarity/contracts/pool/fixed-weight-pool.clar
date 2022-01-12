@@ -1,8 +1,6 @@
 (impl-trait .trait-ownable.ownable-trait)
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
 
-(use-trait multisig-trait .trait-multisig-vote.multisig-vote-trait)
-
 ;; fixed-weight-pool
 ;; Fixed Weight Pool is an uniswap-like on-chain AMM based on Balancer
 ;;
@@ -69,7 +67,7 @@
 )
 
 (define-data-var pool-count uint u0)
-(define-data-var pools-list (list 2000 uint) (list))
+(define-data-var pools-list (list 500 uint) (list))
 
 ;; @desc get-pool-count
 ;; @returns uint
@@ -96,36 +94,34 @@
 )
 
 ;; @desc get-pool-details
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response (tuple) uint)
-(define-read-only (get-pool-details (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
-    (ok (unwrap! (get-pool-exists token-x-trait token-y-trait weight-x weight-y) ERR-INVALID-POOL))
+(define-read-only (get-pool-details (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
+    (ok (unwrap! (get-pool-exists token-x token-y weight-x weight-y) ERR-INVALID-POOL))
 )
 
 ;; @desc get-pool-exists
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (optional (tuple))
-(define-read-only (get-pool-exists (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
-    (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) 
+(define-read-only (get-pool-exists (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
+    (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) 
 )
 
 ;; @desc get-balances ({balance-x, balance-y})
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response (tuple uint uint) uint)
-(define-read-only (get-balances (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
+(define-read-only (get-balances (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
   (let
     (
-      (token-x (contract-of token-x-trait))
-      (token-y (contract-of token-y-trait))
       (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y  }) ERR-INVALID-POOL))
     )
     (ok {balance-x: (get balance-x pool), balance-y: (get balance-y pool)})
@@ -133,99 +129,113 @@
 )
 
 ;; @desc get-oracle-enabled
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response bool uint)
-(define-read-only (get-oracle-enabled (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
-    (ok (get 
+(define-read-only (get-oracle-enabled (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
+    (ok 
+        (get 
             oracle-enabled 
-            (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)))
+            (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)
+        )
+    )
 )
 
 ;; @desc set-oracle-enabled
 ;; @desc oracle can only be enabled
 ;; @restricted contract-owner
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response bool uint)
-(define-public (set-oracle-enabled (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
+(define-public (set-oracle-enabled (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
     (let
         (
-            (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
-            (pool-updated (merge pool {oracle-enabled: true}))
+            (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
         (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
         (asserts! (not (get oracle-enabled pool)) ERR-ORACLE-ALREADY-ENABLED)
-        (map-set pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y } pool-updated)
+        (map-set 
+            pools-data-map 
+            { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y } 
+            (merge pool {oracle-enabled: true})
+        )
         (ok true)
     )    
 )
 
 ;; @desc get-oracle-average
 ;; @desc returns the moving average used to determine oracle price
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response uint uint)
-(define-read-only (get-oracle-average (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
-    (ok (get 
+(define-read-only (get-oracle-average (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
+    (ok 
+        (get 
             oracle-average 
-            (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)))
+            (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)
+        )
+    )
 )
 
 ;; @desc set-oracle-average
 ;; @restricted contract-owner
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response bool uint)
-(define-public (set-oracle-average (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (new-oracle-average uint))
+(define-public (set-oracle-average (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (new-oracle-average uint))
     (let
         (
-            (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
-            (pool-updated (merge pool {
-                oracle-average: new-oracle-average,
-                oracle-resilient: (try! (get-oracle-instant token-x-trait token-y-trait weight-x weight-y))
-                }))
+            (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
         (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
         (asserts! (get oracle-enabled pool) ERR-ORACLE-NOT-ENABLED)
         (asserts! (< new-oracle-average ONE_8) ERR-ORACLE-AVERAGE-BIGGER-THAN-ONE)
-        (map-set pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y } pool-updated)
+        (map-set 
+            pools-data-map 
+            { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y } 
+            (merge pool 
+                {
+                oracle-average: new-oracle-average,
+                oracle-resilient: (try! (get-oracle-instant token-x token-y weight-x weight-y))
+                }
+            )
+        )
         (ok true)
     )    
 )
 
 ;; @desc get-oracle-resilient
 ;; @desc price-oracle that is less up to date but more resilient to manipulation
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response uint uint)
-(define-read-only (get-oracle-resilient (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
+(define-read-only (get-oracle-resilient (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
     (begin
-        (if (is-some (get-pool-exists token-x-trait token-y-trait weight-x weight-y))
+        (if (is-some (get-pool-exists token-x token-y weight-x weight-y))
             (let
                 (
-                    (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
+                    (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
                 )
                 (asserts! (get oracle-enabled pool) ERR-ORACLE-NOT-ENABLED)
-                (ok (+ (mul-down (- ONE_8 (get oracle-average pool)) (try! (get-oracle-instant token-x-trait token-y-trait weight-x weight-y))) 
+                (ok (+ (mul-down (- ONE_8 (get oracle-average pool)) (try! (get-oracle-instant token-x token-y weight-x weight-y))) 
                        (mul-down (get oracle-average pool) (get oracle-resilient pool))))
             )
             (let
                 (
-                    (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of token-y-trait), token-y: (contract-of token-x-trait), weight-x: weight-y, weight-y: weight-x }) ERR-INVALID-POOL))
+                    (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-y, weight-y: weight-x }) ERR-INVALID-POOL))
                 )
                 (asserts! (get oracle-enabled pool) ERR-ORACLE-NOT-ENABLED)
-                (ok (+ (mul-down (- ONE_8 (get oracle-average pool)) (try! (get-oracle-instant token-x-trait token-y-trait weight-x weight-y))) 
+                (ok (+ (mul-down (- ONE_8 (get oracle-average pool)) (try! (get-oracle-instant token-x token-y weight-x weight-y))) 
                        (mul-down (get oracle-average pool) (div-down ONE_8 (get oracle-resilient pool)))))
             )
         )            
@@ -234,24 +244,24 @@
 
 ;; @desc get-oracle-instant
 ;; @desc price-oracle that is more up to date but less resilient to manipulation
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response uint uint)
-(define-read-only (get-oracle-instant (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
+(define-read-only (get-oracle-instant (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
     (begin                
-        (if (is-some (get-pool-exists token-x-trait token-y-trait weight-x weight-y))
+        (if (is-some (get-pool-exists token-x token-y weight-x weight-y))
             (let
                 (
-                    (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
+                    (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
                 )
                 (asserts! (get oracle-enabled pool) ERR-ORACLE-NOT-ENABLED)
                 (ok (div-down (mul-down (get balance-y pool) weight-x) (mul-down (get balance-x pool) weight-y)))
             )
             (let
                 (
-                    (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of token-y-trait), token-y: (contract-of token-x-trait), weight-x: weight-y, weight-y: weight-x }) ERR-INVALID-POOL))
+                    (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-y, weight-y: weight-x }) ERR-INVALID-POOL))
                 )
                 (asserts! (get oracle-enabled pool) ERR-ORACLE-NOT-ENABLED)
                 (ok (div-down (mul-down (get balance-x pool) weight-y) (mul-down (get balance-y pool) weight-x)))
@@ -271,7 +281,7 @@
 ;; @param dx; amount of token-x added
 ;; @param dy; amount of token-y added
 ;; @returns (response bool uint)
-(define-public (create-pool (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (the-pool-token <ft-trait>) (multisig-vote <multisig-trait>) (dx uint) (dy uint)) 
+(define-public (create-pool (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (pool-token-trait <ft-trait>) (multisig-vote principal) (dx uint) (dy uint)) 
     (let
         (
             (token-x (contract-of token-x-trait))
@@ -281,8 +291,8 @@
                 total-supply: u0,
                 balance-x: u0,
                 balance-y: u0,
-                fee-to-address: (contract-of multisig-vote),
-                pool-token: (contract-of the-pool-token),
+                fee-to-address: multisig-vote,
+                pool-token: (contract-of pool-token-trait),
                 fee-rate-x: u0,
                 fee-rate-y: u0,
                 fee-rebate: u0,
@@ -305,10 +315,14 @@
         (map-set pools-map { pool-id: pool-id } { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y })
         (map-set pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y } pool-data)
         
-        (var-set pools-list (unwrap! (as-max-len? (append (var-get pools-list) pool-id) u2000) ERR-TOO-MANY-POOLS))
+        (var-set pools-list (unwrap! (as-max-len? (append (var-get pools-list) pool-id) u500) ERR-TOO-MANY-POOLS))
         (var-set pool-count pool-id)
-        ;; Deployer should inject the initial coins to the pool
-        (try! (add-to-position token-x-trait token-y-trait weight-x weight-y the-pool-token dx dy))
+        
+        (try! (contract-call? .alex-vault add-approved-token token-x))
+        (try! (contract-call? .alex-vault add-approved-token token-y))
+        (try! (contract-call? .alex-vault add-approved-token (contract-of pool-token-trait)))        
+
+        (try! (add-to-position token-x-trait token-y-trait weight-x weight-y pool-token-trait dx (some dy)))
         (print { object: "pool", action: "created", data: pool-data })
         (ok true)
     )
@@ -324,9 +338,9 @@
 ;; @param dx; amount of token-x added
 ;; @param dy; amount of token-y added
 ;; @returns (response (tuple uint uint uint) uint)
-(define-public (add-to-position (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (the-pool-token <ft-trait>) (dx uint) (dy uint))
+(define-public (add-to-position (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (pool-token-trait <ft-trait>) (dx uint) (max-dy (optional uint)))
     (begin
-        (asserts! (and (> dx u0) (> dy u0)) ERR-INVALID-LIQUIDITY)
+        (asserts! (> dx u0) ERR-INVALID-LIQUIDITY)
 
         (let
             (
@@ -336,28 +350,30 @@
                 (balance-x (get balance-x pool))
                 (balance-y (get balance-y pool))
                 (total-supply (get total-supply pool))
-                (add-data (try! (get-token-given-position token-x-trait token-y-trait weight-x weight-y dx dy)))
+                (add-data (try! (get-token-given-position token-x token-y weight-x weight-y dx max-dy)))
                 (new-supply (get token add-data))
-                (new-dy (get dy add-data))
+                (dy (get dy add-data))
                 (pool-updated (merge pool {
                     total-supply: (+ new-supply total-supply),
                     balance-x: (+ balance-x dx),
-                    balance-y: (+ balance-y new-dy)
+                    balance-y: (+ balance-y dy)
                 }))
+                (sender tx-sender)
             )
+            (asserts! (> dy u0) ERR-INVALID-LIQUIDITY)
             ;; CR-01
-            (asserts! (>= dy new-dy) ERR-EXCEEDS-MAX-SLIPPAGE)
-            (asserts! (is-eq (get pool-token pool) (contract-of the-pool-token)) ERR-INVALID-TOKEN)
+            (asserts! (>= (default-to u340282366920938463463374607431768211455 max-dy) dy) ERR-EXCEEDS-MAX-SLIPPAGE)
+            (asserts! (is-eq (get pool-token pool) (contract-of pool-token-trait)) ERR-INVALID-TOKEN)
 
-            (unwrap! (contract-call? token-x-trait transfer-fixed dx tx-sender .alex-vault none) ERR-TRANSFER-FAILED)
-            (unwrap! (contract-call? token-y-trait transfer-fixed new-dy tx-sender .alex-vault none) ERR-TRANSFER-FAILED)
+            (unwrap! (contract-call? token-x-trait transfer-fixed dx sender .alex-vault none) ERR-TRANSFER-FAILED)
+            (unwrap! (contract-call? token-y-trait transfer-fixed dy sender .alex-vault none) ERR-TRANSFER-FAILED)
 
             ;; mint pool token and send to tx-sender
             (map-set pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y } pool-updated)
-            (try! (contract-call? the-pool-token mint-fixed new-supply tx-sender))
+            (as-contract (try! (contract-call? pool-token-trait mint-fixed new-supply sender)))
             
             (print { object: "pool", action: "liquidity-added", data: pool-updated })
-            (ok {supply: new-supply, dx: dx, dy: new-dy})
+            (ok {supply: new-supply, dx: dx, dy: dy})
         )
     )
 )    
@@ -371,7 +387,7 @@
 ;; @param pool-token; pool token representing ownership of the pool
 ;; @param percent; percentage of pool token held to reduce
 ;; @returns (response (tuple uint uint) uint)
-(define-public (reduce-position (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (the-pool-token <ft-trait>) (percent uint))
+(define-public (reduce-position (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (pool-token-trait <ft-trait>) (percent uint))
     (begin
         (asserts! (<= percent ONE_8) ERR-PERCENT-GREATER-THAN-ONE)
         (let
@@ -381,10 +397,10 @@
                 (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
                 (balance-x (get balance-x pool))
                 (balance-y (get balance-y pool))
-                (total-shares (unwrap-panic (contract-call? the-pool-token get-balance-fixed tx-sender)))
+                (total-shares (unwrap-panic (contract-call? pool-token-trait get-balance-fixed tx-sender)))
                 (shares (if (is-eq percent ONE_8) total-shares (mul-down total-shares percent)))
                 (total-supply (get total-supply pool))
-                (reduce-data (try! (get-position-given-burn token-x-trait token-y-trait weight-x weight-y shares)))
+                (reduce-data (try! (get-position-given-burn token-x token-y weight-x weight-y shares)))
                 (dx (get dx reduce-data))
                 (dy (get dy reduce-data))
                 (pool-updated (merge pool {
@@ -393,16 +409,17 @@
                     balance-y: (if (<= balance-y dy) u0 (- balance-y dy))
                     })
                 )
+                (sender tx-sender)
             )
 
-            (asserts! (is-eq (get pool-token pool) (contract-of the-pool-token)) ERR-INVALID-TOKEN)            
+            (asserts! (is-eq (get pool-token pool) (contract-of pool-token-trait)) ERR-INVALID-TOKEN)            
 
-            (try! (contract-call? .alex-vault transfer-ft token-x-trait dx tx-sender))
-            (try! (contract-call? .alex-vault transfer-ft token-y-trait dy tx-sender))
+            (as-contract (try! (contract-call? .alex-vault transfer-ft token-x-trait dx sender)))
+            (as-contract (try! (contract-call? .alex-vault transfer-ft token-y-trait dy sender)))
 
             (map-set pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y } pool-updated)
 
-            (try! (contract-call? the-pool-token burn-fixed shares tx-sender))
+            (as-contract (try! (contract-call? pool-token-trait burn-fixed shares sender)))
 
             (print { object: "pool", action: "liquidity-removed", data: pool-updated })
             (ok {dx: dx, dy: dy})
@@ -432,7 +449,7 @@
                 (dx-net-fees (if (<= dx fee) u0 (- dx fee)))
                 (fee-rebate (mul-down fee (get fee-rebate pool)))
     
-                (dy (try! (get-y-given-wstx token-y-trait weight-y dx-net-fees)))
+                (dy (try! (get-y-given-wstx token-y weight-y dx-net-fees)))
 
                 (pool-updated
                     (merge pool
@@ -440,19 +457,20 @@
                         balance-x: (+ balance-x dx-net-fees fee-rebate),
                         balance-y: (if (<= balance-y dy) u0 (- balance-y dy)),
                         oracle-resilient:   (if (get oracle-enabled pool) 
-                                                (try! (get-oracle-resilient .token-wstx token-y-trait weight-x weight-y))
+                                                (try! (get-oracle-resilient .token-wstx token-y weight-x weight-y))
                                                 u0
                                             )
                         }
                     )
                 )
+                (sender tx-sender)
             )
 
             (asserts! (<= (default-to u0 min-dy) dy) ERR-EXCEEDS-MAX-SLIPPAGE)
         
-            (unwrap! (contract-call? .token-wstx transfer-fixed dx tx-sender .alex-vault none) ERR-TRANSFER-FAILED)
-            (try! (contract-call? .alex-vault transfer-ft token-y-trait dy tx-sender))
-            (try! (contract-call? .alex-reserve-pool add-to-balance .token-wstx (- fee fee-rebate)))            
+            (unwrap! (contract-call? .token-wstx transfer-fixed dx sender .alex-vault none) ERR-TRANSFER-FAILED)
+            (as-contract (try! (contract-call? .alex-vault transfer-ft token-y-trait dy sender)))
+            (as-contract (try! (contract-call? .alex-reserve-pool add-to-balance .token-wstx (- fee fee-rebate))))
 
             ;; post setting
             (map-set pools-data-map { token-x: .token-wstx, token-y: token-y, weight-x: weight-x, weight-y: weight-y } pool-updated)
@@ -484,7 +502,7 @@
                 (dy-net-fees (if (<= dy fee) u0 (- dy fee)))
                 (fee-rebate (mul-down fee (get fee-rebate pool)))
 
-                (dx (try! (get-wstx-given-y token-y-trait weight-y dy-net-fees)))
+                (dx (try! (get-wstx-given-y token-y weight-y dy-net-fees)))
 
                 (pool-updated
                     (merge pool
@@ -492,19 +510,20 @@
                         balance-x: (if (<= balance-x dx) u0 (- balance-x dx)),
                         balance-y: (+ balance-y dy-net-fees fee-rebate),
                         oracle-resilient:   (if (get oracle-enabled pool) 
-                                                (try! (get-oracle-resilient .token-wstx token-y-trait weight-x weight-y))
+                                                (try! (get-oracle-resilient .token-wstx token-y weight-x weight-y))
                                                 u0
                                             )
                         }
                     )
                 )
+                (sender tx-sender)
             )
 
             (asserts! (<= (default-to u0 min-dx) dx) ERR-EXCEEDS-MAX-SLIPPAGE)
         
-            (try! (contract-call? .alex-vault transfer-ft .token-wstx dx tx-sender))
-            (unwrap! (contract-call? token-y-trait transfer-fixed dy tx-sender .alex-vault none) ERR-TRANSFER-FAILED)
-            (try! (contract-call? .alex-reserve-pool add-to-balance token-y (- fee fee-rebate)))
+            (as-contract (try! (contract-call? .alex-vault transfer-ft .token-wstx dx sender)))
+            (unwrap! (contract-call? token-y-trait transfer-fixed dy sender .alex-vault none) ERR-TRANSFER-FAILED)
+            (as-contract (try! (contract-call? .alex-reserve-pool add-to-balance token-y (- fee fee-rebate))))
 
             ;; post setting
             (map-set pools-data-map { token-x: .token-wstx, token-y: token-y, weight-x: weight-x, weight-y: weight-y } pool-updated)
@@ -564,28 +583,26 @@
 )
 
 ;; @desc get-fee-rebate
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response uint uint)
-(define-read-only (get-fee-rebate (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
-    (ok (get fee-rebate (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)))
+(define-read-only (get-fee-rebate (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
+    (ok (get fee-rebate (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)))
 )
 
 ;; @desc set-fee-rebate
 ;; @restricted contract-owner
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param fee-rebate; new fee-rebate
 ;; @returns (response bool uint)
-(define-public (set-fee-rebate (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (fee-rebate uint))
+(define-public (set-fee-rebate (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (fee-rebate uint))
     (let 
-        (
-            (token-x (contract-of token-x-trait))
-            (token-y (contract-of token-y-trait))            
+        (            
             (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
         (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
@@ -601,48 +618,39 @@
 )
 
 ;; @desc get-fee-rate-x
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response uint uint)
-(define-read-only (get-fee-rate-x (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
-    (ok (get fee-rate-x (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)))
+(define-read-only (get-fee-rate-x (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
+    (ok (get fee-rate-x (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)))
 )
 
 ;; @desc get-fee-rate-y
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response uint uint)
-(define-read-only (get-fee-rate-y (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
-    (let 
-        (
-            (token-x (contract-of token-x-trait))
-            (token-y (contract-of token-y-trait))            
-            (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
-        )
-        (ok (get fee-rate-y pool))
-    )
+(define-read-only (get-fee-rate-y (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
+    (ok (get fee-rate-y (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)))
 )
 
 ;; @desc set-fee-rate-x
 ;; @restricted fee-to-address
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param fee-rate-x; new fee-rate-x
 ;; @returns (response bool uint)
-(define-public (set-fee-rate-x (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (fee-rate-x uint))
+(define-public (set-fee-rate-x (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (fee-rate-x uint))
     (let 
-        (
-            (token-x (contract-of token-x-trait))
-            (token-y (contract-of token-y-trait))            
+        (        
             (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
-        (asserts! (is-eq contract-caller (get fee-to-address pool)) ERR-NOT-AUTHORIZED)
+        (asserts! (is-eq tx-sender (get fee-to-address pool)) ERR-NOT-AUTHORIZED)
 
         (map-set pools-data-map 
             { 
@@ -656,20 +664,18 @@
 
 ;; @desc set-fee-rate-y
 ;; @restricted fee-to-address
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param fee-rate-y; new fee-rate-y
 ;; @returns (response bool uint)
-(define-public (set-fee-rate-y (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (fee-rate-y uint))
+(define-public (set-fee-rate-y (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (fee-rate-y uint))
     (let 
-        (
-            (token-x (contract-of token-x-trait))
-            (token-y (contract-of token-y-trait))            
+        (    
             (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
-        (asserts! (is-eq contract-caller (get fee-to-address pool)) ERR-NOT-AUTHORIZED)
+        (asserts! (is-eq tx-sender (get fee-to-address pool)) ERR-NOT-AUTHORIZED)
 
         (map-set pools-data-map 
             { 
@@ -682,19 +688,29 @@
 )
 
 ;; @desc get-fee-to-address
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @returns (response principal uint)
-(define-read-only (get-fee-to-address (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint))
+(define-read-only (get-fee-to-address (token-x principal) (token-y principal) (weight-x uint) (weight-y uint))
+    (ok (get fee-to-address (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL)))
+)
+
+(define-public (set-fee-to-address (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (fee-to-address principal))
     (let 
         (
-            (token-x (contract-of token-x-trait))
-            (token-y (contract-of token-y-trait))                
-            (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
+            (pool (try! (get-pool-details token-x token-y weight-x weight-y)))
         )
-        (ok (get fee-to-address pool))
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+
+        (map-set pools-data-map 
+            { 
+                token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y 
+            }
+            (merge pool { fee-to-address: fee-to-address })
+        )
+        (ok true)     
     )
 )
 
@@ -703,12 +719,11 @@
 ;; @params weight-y 
 ;; @params dx 
 ;; @returns (respons uint uint)
-(define-read-only (get-y-given-wstx (token-y-trait <ft-trait>) (weight-y uint) (dx uint))
-    
+(define-read-only (get-y-given-wstx (token-y principal) (weight-y uint) (dx uint))
     (let 
         (
             (weight-x (- ONE_8 weight-y))
-            (pool (unwrap! (map-get? pools-data-map { token-x: .token-wstx, token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
+            (pool (unwrap! (map-get? pools-data-map { token-x: .token-wstx, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
         (contract-call? .weighted-equation get-y-given-x (get balance-x pool) (get balance-y pool) weight-x weight-y dx)        
     )
@@ -719,146 +734,128 @@
 ;; @params weight-y 
 ;; @params dy
 ;; @returns (respons uint uint)
-(define-read-only (get-wstx-given-y (token-y-trait <ft-trait>) (weight-y uint) (dy uint)) 
+(define-read-only (get-wstx-given-y (token-y principal) (weight-y uint) (dy uint)) 
     (let 
         (
             (weight-x (- ONE_8 weight-y))
-            (pool (unwrap! (map-get? pools-data-map { token-x: .token-wstx, token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
+            (pool (unwrap! (map-get? pools-data-map { token-x: .token-wstx, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
         (contract-call? .weighted-equation get-x-given-y (get balance-x pool) (get balance-y pool) weight-x weight-y dy)
     )
 )
 
 ;; @desc units of token-y given units of token-x
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param dx; amount of token-x being added
 ;; @returns (response uint uint)
-(define-read-only (get-y-given-x (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (dx uint))
-    (if (is-eq (contract-of token-x-trait) .token-wstx)
-        (get-y-given-wstx token-y-trait weight-y dx)
-        (if (is-eq (contract-of token-y-trait) .token-wstx)
-            (get-wstx-given-y token-x-trait weight-x dx)
-            (get-y-given-wstx token-y-trait weight-y (try! (get-wstx-given-y token-x-trait weight-x dx)))
+(define-read-only (get-y-given-x (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (dx uint))
+    (if (is-eq token-x .token-wstx)
+        (get-y-given-wstx token-y weight-y dx)
+        (if (is-eq token-y .token-wstx)
+            (get-wstx-given-y token-x weight-x dx)
+            (get-y-given-wstx token-y weight-y (try! (get-wstx-given-y token-x weight-x dx)))
         )
     )
 )
 
 ;; @desc units of token-x given units of token-y
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param dy; amount of token-y being added
 ;; @returns (response uint uint)
-(define-read-only (get-x-given-y (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (dy uint)) 
-    (if (is-eq (contract-of token-x-trait) .token-wstx)
-        (get-wstx-given-y token-y-trait weight-y dy)
-        (if (is-eq (contract-of token-y-trait) .token-wstx)
-            (get-y-given-wstx token-x-trait weight-x dy)
-            (get-y-given-wstx token-x-trait weight-x (try! (get-wstx-given-y token-y-trait weight-y dy)))
+(define-read-only (get-x-given-y (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (dy uint)) 
+    (if (is-eq token-x .token-wstx)
+        (get-wstx-given-y token-y weight-y dy)
+        (if (is-eq token-y .token-wstx)
+            (get-y-given-wstx token-x weight-x dy)
+            (get-y-given-wstx token-x weight-x (try! (get-wstx-given-y token-y weight-y dy)))
         )
     )
 )
 
 ;; @desc units of token-x required for a target price
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param price; target price
 ;; @returns (response uint uint)
-(define-read-only (get-x-given-price (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (price uint))
+(define-read-only (get-x-given-price (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (price uint))
     (let 
         (
-            (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
+            (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
         (contract-call? .weighted-equation get-x-given-price (get balance-x pool) (get balance-y pool) weight-x weight-y price)
     )
 )
 
 ;; @desc units of token-y required for a target price
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param price; target price
 ;; @returns (response uint uint)
-(define-read-only (get-y-given-price (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (price uint))
+(define-read-only (get-y-given-price (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (price uint))
     (let 
         (
-            (pool (unwrap! (map-get? pools-data-map { token-x: (contract-of token-x-trait), token-y: (contract-of token-y-trait), weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
+            (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
         (contract-call? .weighted-equation get-y-given-price (get balance-x pool) (get balance-y pool) weight-x weight-y price)
     )
 )
 
 ;; @desc units of pool token to be minted given amount of token-x and token-y being added
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param dx; amount of token-x added
 ;; @param dy; amount of token-y added
 ;; @returns (response (tuple uint uint) uint)
-(define-read-only (get-token-given-position (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (dx uint) (dy uint))
+(define-read-only (get-token-given-position (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (dx uint) (max-dy (optional uint)))
     (let 
         (
-        (token-x (contract-of token-x-trait))
-        (token-y (contract-of token-y-trait))
-        (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
-        (balance-x (get balance-x pool))
-        (balance-y (get balance-y pool))
-        (total-supply (get total-supply pool))
+            (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
-        (contract-call? .weighted-equation get-token-given-position balance-x balance-y weight-x weight-y total-supply dx dy)
+        (contract-call? .weighted-equation get-token-given-position (get balance-x pool) (get balance-y pool) weight-x weight-y (get total-supply pool) dx (default-to u340282366920938463463374607431768211455 max-dy))
     )
-
 )
 
 ;; @desc units of token-x/token-y required to mint given units of pool-token
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param token; units of pool token to be minted
 ;; @returns (response (tuple uint uint) uint)
-(define-read-only (get-position-given-mint (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (token uint))
-
+(define-read-only (get-position-given-mint (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (token uint))
     (let 
         (
-        (token-x (contract-of token-x-trait))
-        (token-y (contract-of token-y-trait))
-        (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
-        (balance-x (get balance-x pool))
-        (balance-y (get balance-y pool))
-        (total-supply (get total-supply pool))        
+            (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
-        (contract-call? .weighted-equation get-position-given-mint balance-x balance-y weight-x weight-y total-supply token)
+        (contract-call? .weighted-equation get-position-given-mint (get balance-x pool) (get balance-y pool) weight-x weight-y (get total-supply pool) token)
     )
 )
 
 ;; @desc units of token-x/token-y to be returned after burning given units of pool-token
-;; @param token-x-trait; token-x
-;; @param token-y-trait; token-y
+;; @param token-x; token-x principal
+;; @param token-y; token-y principal
 ;; @param weight-x; weight of token-x
 ;; @param weight-y; weight of token-y
 ;; @param token; units of pool token to be burnt
 ;; @returns (response (tuple uint uint) uint)
-(define-read-only (get-position-given-burn (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (token uint))
-    
+(define-read-only (get-position-given-burn (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (token uint))
     (let 
         (
-        (token-x (contract-of token-x-trait))
-        (token-y (contract-of token-y-trait))
-        (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
-        (balance-x (get balance-x pool))
-        (balance-y (get balance-y pool))
-        (total-supply (get total-supply pool))
+            (pool (unwrap! (map-get? pools-data-map { token-x: token-x, token-y: token-y, weight-x: weight-x, weight-y: weight-y }) ERR-INVALID-POOL))
         )
-        (contract-call? .weighted-equation get-position-given-burn balance-x balance-y weight-x weight-y total-supply token)
+        (contract-call? .weighted-equation get-position-given-burn (get balance-x pool) (get balance-y pool) weight-x weight-y (get total-supply pool) token)
     )
 )
 
@@ -1229,7 +1226,7 @@
             (get dy (try! (swap-wstx-for-y token-y-trait weight-y dx min-dy)))
             (if (is-eq (contract-of token-y-trait) .token-wstx)
                 (get dx (try! (swap-y-for-wstx token-x-trait weight-x dx min-dy)))
-                (if (is-some (get-pool-exists token-x-trait token-y-trait weight-x weight-y))
+                (if (is-some (get-pool-exists (contract-of token-x-trait) (contract-of token-y-trait) weight-x weight-y))
                     (get dy (try! (swap-x-for-y token-x-trait token-y-trait weight-x weight-y dx min-dy)))
                     (get dx (try! (swap-y-for-x token-y-trait token-x-trait weight-y weight-x dx min-dy)))
                 )
@@ -1245,15 +1242,15 @@
 ;; @params weight-y
 ;; @params dy
 ;; @returns (response uint uint)
-(define-read-only (get-helper (token-x-trait <ft-trait>) (token-y-trait <ft-trait>) (weight-x uint) (weight-y uint) (dx uint))
+(define-read-only (get-helper (token-x principal) (token-y principal) (weight-x uint) (weight-y uint) (dx uint))
     (ok 
-        (if (is-eq (contract-of token-x-trait) .token-wstx)
-            (try! (get-y-given-wstx token-y-trait weight-y dx))
-            (if (is-eq (contract-of token-y-trait) .token-wstx)
-                (try! (get-wstx-given-y token-x-trait weight-x dx))
-                (if (is-some (get-pool-exists token-x-trait token-y-trait weight-x weight-y))
-                    (try! (get-y-given-x token-x-trait token-y-trait weight-x weight-y dx))
-                    (try! (get-x-given-y token-y-trait token-x-trait weight-y weight-x dx))
+        (if (is-eq token-x .token-wstx)
+            (try! (get-y-given-wstx token-y weight-y dx))
+            (if (is-eq token-y .token-wstx)
+                (try! (get-wstx-given-y token-x weight-x dx))
+                (if (is-some (get-pool-exists token-x token-y weight-x weight-y))
+                    (try! (get-y-given-x token-x token-y weight-x weight-y dx))
+                    (try! (get-x-given-y token-y token-x weight-y weight-x dx))
                 )
             )
         )
