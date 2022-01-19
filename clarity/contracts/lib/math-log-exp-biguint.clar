@@ -274,3 +274,85 @@
    )
  )
 )
+
+;; (define-constant x_a_list_no_deci_update (list 
+;; {x_pre: 640000000000000000, a_pre: 62351490808116168829, use_deci: false} ;; x1 = 2^6, a1 = e^(x1)
+;; ))
+
+
+
+;; 16 decimal constants
+(define-constant x_a_list_update (list 
+{x_pre: 3200000000000000000000000000000000, x_pre_exp: -16, a_pre: 789629601826806951609780226351, a_exp: -16} ;; x0 = 2^5, a0 = e^(x0)
+{x_pre: 1600000000000000000000000000000000, x_pre_exp: -16, a_pre: 88861105205078726367630, a_exp: -16} ;; x1 = 2^4, a1 = e^(x1)
+{x_pre: 800000000000000000000000000000000, x_pre_exp: -16, a_pre: 29809579870417282747, a_exp: -16} ;; x2 = 2^3, a2 = e^(x2)
+{x_pre: 400000000000000000000000000000000, x_pre_exp: -16, a_pre: 545981500331442391, a_exp: -16} ;; x3 = 2^2, a3 = e^(x3)
+{x_pre: 200000000000000000000000000000000, x_pre_exp: -16, a_pre: 73890560989306502, a_exp: -16} ;; x4 = 2^1, a4 = e^(x4)
+{x_pre: 100000000000000000000000000000000, x_pre_exp: -16, a_pre: 27182818284590452, a_exp: -16} ;; x5 = 2^0, a5 = e^(x5)
+{x_pre: 50000000000000000000000000000000, x_pre_exp: -16, a_pre: 16487212707001282, a_exp: -16} ;; x6 = 2^-1, a6 = e^(x6)
+{x_pre: 25000000000000000000000000000000, x_pre_exp: -16, a_pre: 12840254166877415, a_exp: -16} ;; x7 = 2^-2, a7 = e^(x7)
+{x_pre: 12500000000000000000000000000000, x_pre_exp: -16, a_pre: 11331484530668263, a_exp: -16} ;; x8 = 2^-3, a8 = e^(x8)
+{x_pre: 6250000000000000000000000000000, x_pre_exp: -16, a_pre: 10644944589178594, a_exp: -16} ;; x9 = 2^-4, a9 = e^(x9)
+;; {x_pre: 312500000000000000000000000000, x_pre_exp: -16, a_pre: 10317434074991027, a_exp: -16} ;; x10 = 2^-5, a10 = e^(x10)
+))
+
+
+(define-private (greater-than-equal-to (a int) (a_exp int) (b int) (b_exp int))
+  (if (> a_exp b_exp)
+      true
+      (if (is-eq a_exp b_exp)
+        (if (>= a b)
+        true
+        false)
+        false)
+  )
+)
+
+(define-private (accumulate_division_update (x_a_pre (tuple (x_pre int) (a_pre int) (x_pre_exp int) (a_exp int))) (rolling_a_sum (tuple (a int) (a_res_exp int) (sum int) (sum_res_exp int))))  
+  (let
+    (
+      (a_pre (get a_pre x_a_pre))
+      (x_pre (get x_pre x_a_pre))
+      (x_pre_exp (get x_pre_exp x_a_pre))
+      (a_exp (get a_exp x_a_pre))
+      (rolling_a (get a rolling_a_sum))
+      (rolling_sum (get sum rolling_a_sum))
+      (a_res_exp (get a_res_exp rolling_a_sum))
+      (sum_res_exp (get sum_res_exp rolling_a_sum))
+   )
+    (if (greater-than-equal-to rolling_a a_res_exp a_pre a_exp)
+    
+      {  
+      a: (/ (* rolling_a ONE_16) a_pre), 
+      a_res_exp: (+ a_res_exp 16),
+      sum: (+ rolling_sum x_pre),
+      sum_res_exp: x_pre_exp
+      }   
+      {a: rolling_a, a_res_exp: a_res_exp, sum: rolling_sum, sum_res_exp: sum_res_exp}
+   )
+ )
+)
+
+
+(define-public (ln-priv-update (a int))
+    (let
+        (
+            ;; decomposition process
+            ;; https://github.com/balancer-labs/balancer-v2-monorepo/blob/a62e10f948c5de65ddfd6d07f54818bf82379eea/pkg/solidity-utils/contracts/math/LogExpMath.sol#L349
+            (a_sum (fold accumulate_division_update x_a_list_update {a: a, a_res_exp: -16, sum: 0, sum_res_exp: 0}))
+            ;; (out_a (get a a_sum))
+            ;; (out_sum (get sum a_sum))
+            ;; ;; below is the Taylor series now 
+            ;; ;; https://github.com/balancer-labs/balancer-v2-monorepo/blob/a62e10f948c5de65ddfd6d07f54818bf82379eea/pkg/solidity-utils/contracts/math/LogExpMath.sol#L416 
+            ;; ;; z = (a-1)/(a+1) so for precision we multiply dividend with ONE_16 to retain precision
+            ;; (z (/ (scale-up (- out_a ONE_16)) (+ out_a ONE_16)))
+            ;; (z_squared (/ (* z z) ONE_16))
+            ;; (div_list (list 3 5 7 9 11))
+            ;; (num_sum_zsq (fold rolling_sum_div div_list {num: z, seriesSum: z, z_squared: z_squared}))
+            ;; (seriesSum (get seriesSum num_sum_zsq))
+            ;; (r (+ out_sum (* seriesSum 2)))
+        )
+        ;; (ok {a_sum: a_sum, z: z, z_squared: z_squared})
+        (ok a_sum)
+    )
+)

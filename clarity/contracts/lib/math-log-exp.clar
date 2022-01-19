@@ -260,3 +260,15 @@
   (ok (pow-fixed x y))
  )
 )
+
+
+(define-public (ln-priv-update-other (a int))
+  (let
+    (
+      (a_sum_no_deci (fold accumulate_division x_a_list_no_deci {a: a, sum: 0}))
+      (a_sum (fold accumulate_division x_a_list {a: (get a a_sum_no_deci), sum: (get sum a_sum_no_deci)}))
+      
+   )
+    (ok a_sum)
+ )
+)
