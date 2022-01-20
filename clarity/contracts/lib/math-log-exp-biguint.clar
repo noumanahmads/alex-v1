@@ -364,12 +364,15 @@
       (sum_res_exp (get sum_res_exp rolling_a_sum))
    )
     (if (greater-than-equal-to-update rolling_a a_res_exp a_pre a_exp)
+      (let 
+      ((division (div-with-scientific-notation rolling_a a_res_exp a_pre a_exp)))
       {  
-      a: (/ (* rolling_a ONE_16) a_pre), 
-      a_res_exp: (+ (- a_res_exp a_exp) -16),
-      sum: (+ rolling_sum x_pre),
-      sum_res_exp: x_pre_exp
+        a: (get result division), 
+        a_res_exp: (get exponent division),
+        sum: (+ rolling_sum x_pre),
+        sum_res_exp: x_pre_exp
       }   
+      )
       {a: rolling_a, a_res_exp: a_res_exp, sum: rolling_sum, sum_res_exp: sum_res_exp}
    )
  )
@@ -396,5 +399,15 @@
         )
         ;; (ok {a_sum: a_sum, z: z, z_squared: z_squared})
         (ok a_sum)
+    )
+)
+
+(define-read-only (div-with-scientific-notation (a int) (a-exp int) (b int) (b-exp int))
+    (let
+        (
+            (division (/ (scale-up a) b)) ;; scale-up to get the decimal part precision
+            (exponent (+ (- a-exp b-exp) -16)) ;; scale down from the exponent part
+        )
+        {result: division, exponent: exponent}
     )
 )
