@@ -296,7 +296,25 @@
 ;; {x_pre: 312500000000000000000000000000, x_pre_exp: -16, a_pre: 10317434074991027, a_exp: -16} ;; x10 = 2^-5, a10 = e^(x10)
 ))
 
+;; 16 decimal constants
+(define-constant x_a_list_update_other (list 
+{x_pre: 320000000000000000, x_pre_exp: 16, a_pre: 789629601826806951609780226351, a_exp: -16} ;; x0 = 2^5, a0 = e^(x0)
+{x_pre: 160000000000000000, x_pre_exp: 16, a_pre: 88861105205078726367630, a_exp: -16} ;; x1 = 2^4, a1 = e^(x1)
+{x_pre: 80000000000000000, x_pre_exp: 16, a_pre: 29809579870417282747, a_exp: -16} ;; x2 = 2^3, a2 = e^(x2)
+{x_pre: 40000000000000000, x_pre_exp: 16, a_pre: 545981500331442391, a_exp: -16} ;; x3 = 2^2, a3 = e^(x3)
+{x_pre: 20000000000000000, x_pre_exp: 16, a_pre: 73890560989306502, a_exp: -16} ;; x4 = 2^1, a4 = e^(x4)
+{x_pre: 10000000000000000, x_pre_exp: 16, a_pre: 27182818284590452, a_exp: -16} ;; x5 = 2^0, a5 = e^(x5)
+{x_pre: 5000000000000000, x_pre_exp: 16, a_pre: 16487212707001282, a_exp: -16} ;; x6 = 2^-1, a6 = e^(x6)
+{x_pre: 2500000000000000, x_pre_exp: 16, a_pre: 12840254166877415, a_exp: -16} ;; x7 = 2^-2, a7 = e^(x7)
+{x_pre: 1250000000000000, x_pre_exp: 16, a_pre: 11331484530668263, a_exp: -16} ;; x8 = 2^-3, a8 = e^(x8)
+{x_pre: 625000000000000, x_pre_exp: 16, a_pre: 10644944589178594, a_exp: -16} ;; x9 = 2^-4, a9 = e^(x9)
+;; {x_pre: 312500000000000000000000000000, x_pre_exp: -16, a_pre: 10317434074991027, a_exp: -16} ;; x10 = 2^-5, a10 = e^(x10)
+))
 
+
+
+;; 20 * 10 ^ 2
+;;788999999999999.9 * 10 ^ -1    
 (define-private (greater-than-equal-to (a int) (a_exp int) (b int) (b_exp int))
   (if (> a_exp b_exp)
       true
@@ -306,6 +324,27 @@
         false)
         false)
   )
+)
+
+(define-private (greater-than-equal-to-update (a int) (a_exp int) (b int) (b_exp int))
+
+  (let
+    (
+      (a_num (if (> a_exp 0)
+          (* a (pow 10 a_exp))
+          (/ a (pow 10 (* a_exp -1)))
+      ))
+      (b_num (if (> b_exp 0)
+          (* b (pow 10 b_exp))
+          (/ b (pow 10 (* b_exp -1)))
+      ))
+
+    )
+    (if (>= a_num b_num)
+      true
+      false
+    )
+   )  
 )
 
 (define-private (accumulate_division_update (x_a_pre (tuple (x_pre int) (a_pre int) (x_pre_exp int) (a_exp int))) (rolling_a_sum (tuple (a int) (a_res_exp int) (sum int) (sum_res_exp int))))  
@@ -321,10 +360,9 @@
       (sum_res_exp (get sum_res_exp rolling_a_sum))
    )
     (if (greater-than-equal-to rolling_a a_res_exp a_pre a_exp)
-    
       {  
       a: (/ (* rolling_a ONE_16) a_pre), 
-      a_res_exp: (+ a_res_exp 16),
+      a_res_exp: (+ (- a_res_exp a_exp) -16),
       sum: (+ rolling_sum x_pre),
       sum_res_exp: x_pre_exp
       }   
