@@ -19,10 +19,10 @@ Clarinet.test({
 
         // call = chain.callReadOnlyFn("math-log-exp-biguint", "greater-than-equal-to-update", 
         // [
-        //     types.int(5000000),
-        //     types.int(0),
-        //     types.int(50000000),
-        //     types.int(-1)
+        //     types.int(12446767091965985),
+        //     types.int(-14),
+        //     types.int(16487212707001282),
+        //     types.int(-15)
         // ], deployer.address
         // );
         // console.log('Comaprison', call.result);

@@ -327,24 +327,28 @@
 )
 
 (define-private (greater-than-equal-to-update (a int) (a_exp int) (b int) (b_exp int))
-
-  (let
-    (
-      (a_num (if (> a_exp 0)
-          (* a (pow 10 a_exp))
-          (/ a (pow 10 (* a_exp -1)))
-      ))
-      (b_num (if (> b_exp 0)
-          (* b (pow 10 b_exp))
-          (/ b (pow 10 (* b_exp -1)))
-      ))
-
-    )
-    (if (>= a_num b_num)
+  (if (is-eq a_exp b_exp) 
+    (if (>= a b)
       true
       false
     )
-   )  
+    (let (
+          (a_num (if (> a_exp 0)
+            (* a (pow 10 a_exp))
+            (/ a (pow 10 (* a_exp -1)))
+          ))
+          (b_num (if (> b_exp 0)
+            (* b (pow 10 b_exp))
+            (/ b (pow 10 (* b_exp -1)))
+          ))
+   
+          )
+        (if (>= a_num b_num)
+            true
+            false
+        )
+   ) 
+  )        
 )
 
 (define-private (accumulate_division_update (x_a_pre (tuple (x_pre int) (a_pre int) (x_pre_exp int) (a_exp int))) (rolling_a_sum (tuple (a int) (a_res_exp int) (sum int) (sum_res_exp int))))  
@@ -359,7 +363,7 @@
       (a_res_exp (get a_res_exp rolling_a_sum))
       (sum_res_exp (get sum_res_exp rolling_a_sum))
    )
-    (if (greater-than-equal-to rolling_a a_res_exp a_pre a_exp)
+    (if (greater-than-equal-to-update rolling_a a_res_exp a_pre a_exp)
       {  
       a: (/ (* rolling_a ONE_16) a_pre), 
       a_res_exp: (+ (- a_res_exp a_exp) -16),
