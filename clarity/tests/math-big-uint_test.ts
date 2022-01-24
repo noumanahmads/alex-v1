@@ -17,26 +17,26 @@ Clarinet.test({
             ], deployer.address);
         assertEquals(call.result, "u250000000000000000000000000000000000000") //39 digits MAX
 
-        // call = chain.callReadOnlyFn("math-log-exp-biguint", "greater-than-equal-to-update", 
+        // call = chain.callReadOnlyFn("math-log-exp-biguint", "greater-than-equal-to-update-v", 
         // [
-        //     types.int(12446767091965985),
-        //     types.int(-14),
-        //     types.int(16487212707001282),
-        //     types.int(-15)
+        //     types.int(25),
+        //     types.int(0),
+        //     types.int(73890560989306502),
+        //     types.int(-16)
         // ], deployer.address
         // );
         // console.log('Comaprison', call.result);
 
-
+        
         call = chain.callReadOnlyFn("math-log-exp-biguint", "ln-priv-update",
         [
-            types.int(25 * ONE_16),
+            types.int(25),
         ], deployer.address);
         console.log('Result', call.result);
 
         call = chain.callReadOnlyFn("math-log-exp", "ln-priv-update-other", 
         [
-            types.int(25 * 100000000),
+            types.int(25* 100000000),
         ], deployer.address);
         console.log('Result other ', call.result);
     },
