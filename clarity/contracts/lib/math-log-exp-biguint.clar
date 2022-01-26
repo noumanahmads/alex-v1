@@ -13,6 +13,8 @@
 ;; All arguments and return values are 16 decimal fixed point numbers.
 (define-constant ONE_16 (pow 10 16))
 
+(define-constant ONE_8 (pow 10 8))
+
 ;; The domain of natural exponentiation is bound by the word size and number of decimals used.
 ;; The largest possible result is (2^127 - 1) / 10^16, 
 ;; which makes the largest exponent ln((2^127 - 1) / 10^16) = 51.1883304432
@@ -133,6 +135,7 @@
         )
         ;; (ok {series_sum: seriesSumDouble, r: r})
         (ok r)
+        ;; (ok a_sum)
     )
 )
 
@@ -183,7 +186,7 @@
     (if (greater-than-equal-to rolling_a_a rolling_a_exp a_pre a_pre_exp)
     ;; (if true
         {
-            a: (division-with-scientific-notation rolling_a_a rolling_a_exp a_pre a_pre_exp),
+            a: (get result (div-update-extra rolling_a_a rolling_a_exp a_pre a_pre_exp)),
             sum: (addition-with-scientific-notation rolling_sum_a rolling_sum_exp x_pre x_pre_exp) 
         } ;; rolling_a is scaled up so that precision is not lost when dividing by a_pre
         {a: rolling_a, sum: rolling_sum}
@@ -310,9 +313,13 @@
 (define-read-only (div-update (a int) (a-exp int) (b int) (b-exp int))
     (let
         (
-            (division (/ (scale-up a) b)) ;; scale-up to get the decimal part precision
+            (division (/ (scale-up a) b)) ;; scale-up to get the decimal part precision ;; 14
+            ;; .2516408274
+            
             (division-exponent (- (+ a-exp -16) b-exp)) ;; scale down from the exponent part
-                        
+
+
+                  
             (factor (- (scale-up a) (* division b)))
             ;; (remainder-exponent (get exp (subtraction-with-scientific-notation (scale-up a) (+ a-exp -16) factor factor-exponent)))
 
@@ -322,8 +329,49 @@
             (remainder-exponent (+ division-exponent -16))
 
             (result (addition-with-scientific-notation division division-exponent remainder remainder-exponent))
+            ;; (a-update (/ (get a result) ONE_16))
+            ;; (exp (get exp result))
+
         )
+        ;; {result: {a: a-update, exp: (+ exp 16)}}
         {result: result}
+    )
+)
+
+
+
+(define-read-only (div-update-extra (a int) (a-exp int) (b int) (b-exp int))
+    (let
+        (
+            (division (/ (scale-up a) b)) ;; scale-up to get the decimal part precision ;; 14
+            ;; .2516408274
+            
+            (division-exponent (+ (- a-exp b-exp) -16)) ;; scale down from the exponent part
+              
+            (factor (- (scale-up a) (* division b)))
+            ;; (remainder-exponent (get exp (subtraction-with-scientific-notation (scale-up a) (+ a-exp -16) factor factor-exponent)))
+
+            (remainder (/ (scale-up factor) b))
+            ;; (rem-exponent (- (+ remainder-exponent -16) b-exp))
+            
+            (remainder-exponent (+ a-exp -16))
+
+            (result (addition-with-scientific-notation division division-exponent remainder remainder-exponent))
+            (a-update (/ (get a result) (pow 10 12)))
+            ;; (exp (get exp result))
+
+        )
+        ;; {result: {a: a-update, exp: (+ exp 16)}}
+        ;; {result: result}
+
+        ;; {first: division, second: remainder, first_factor: division-exponent, second_factor: remainder-exponent}
+        (if (greater-than-equal-to a a-exp b b-exp)
+
+        {result: {a: division, exp: division-exponent}}
+        
+        {result: {a: (get a result), exp: division-exponent}}        
+        )     
+
     )
 )
 

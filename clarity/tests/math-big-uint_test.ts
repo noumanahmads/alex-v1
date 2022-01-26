@@ -17,16 +17,39 @@ Clarinet.test({
             types.int(-3)
         ], deployer.address
         );
-        call.result.expectBool(true);
-        call = chain.callReadOnlyFn("math-log-exp-biguint", "greater-than-equal-to", 
+        // call.result.expectBool(true);
+        // call = chain.callReadOnlyFn("math-log-exp-biguint", "greater-than-equal-to", 
+        // [
+        //     types.int(10),
+        //     types.int(3),
+        //     types.int(20),
+        //     types.int(3)
+        // ], deployer.address
+        // );
+        // call.result.expectBool(false);
+
+        call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update-extra", 
         [
-            types.int(10),
-            types.int(3),
-            types.int(20),
-            types.int(3)
+            types.int(126641655490941765),
+            types.int(-30),
+            types.int(8886110520507872),
+            types.int(-9)
         ], deployer.address
         );
-        call.result.expectBool(false);
+
+        console.log('Nouman ', call.result);
+
+        call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update-extra", 
+        [
+            types.int(1),
+            types.int(-30),
+            types.int(8886110520507872),
+            types.int(-9)
+        ], deployer.address
+        );
+
+        console.log('Nouman ', call.result);
+       
     },
 });
 
@@ -42,7 +65,7 @@ Clarinet.test({
         ], deployer.address);
         console.log('Result', call.result);
 
-        call = chain.callReadOnlyFn("math-log-exp", "ln-priv", 
+        call = chain.callReadOnlyFn("math-log-exp", "ln-priv-extra", 
         [
             '5000000000000000000',
             ], deployer.address);
