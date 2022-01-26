@@ -346,32 +346,29 @@
             (division (/ (scale-up a) b)) ;; scale-up to get the decimal part precision ;; 14
             ;; .2516408274
             
-            (division-exponent (+ (- a-exp b-exp) -16)) ;; scale down from the exponent part
-              
+            (division-exponent (- (+ a-exp -16) b-exp)) ;; scale down from the exponent part
+
+
+                  
             (factor (- (scale-up a) (* division b)))
             ;; (remainder-exponent (get exp (subtraction-with-scientific-notation (scale-up a) (+ a-exp -16) factor factor-exponent)))
 
             (remainder (/ (scale-up factor) b))
             ;; (rem-exponent (- (+ remainder-exponent -16) b-exp))
             
-            (remainder-exponent (+ a-exp -16))
+            (remainder-exponent (+ division-exponent -16))
 
             (result (addition-with-scientific-notation division division-exponent remainder remainder-exponent))
-            (a-update (/ (get a result) (pow 10 12)))
+            ;; (a-update (/ (get a result) ONE_16))
             ;; (exp (get exp result))
 
         )
         ;; {result: {a: a-update, exp: (+ exp 16)}}
-        ;; {result: result}
-
-        ;; {first: division, second: remainder, first_factor: division-exponent, second_factor: remainder-exponent}
         (if (greater-than-equal-to a a-exp b b-exp)
-
-        {result: {a: division, exp: division-exponent}}
-        
-        {result: {a: (get a result), exp: division-exponent}}        
-        )     
-
+            {result: {a: division, exp: division-exponent}}
+            {result: result}
+        )
+        ;; {result: result}
     )
 )
 

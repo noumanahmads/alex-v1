@@ -63,13 +63,13 @@ Clarinet.test({
             '50000000000',
             types.int(0),
         ], deployer.address);
-        console.log('Result', call.result);
+        console.log('Result 16', call.result);
 
         call = chain.callReadOnlyFn("math-log-exp", "ln-priv-extra", 
         [
             '5000000000000000000',
             ], deployer.address);
-        console.log('Result 16 ', call.result);
+        console.log('Result 8 ', call.result);
     },
 });
 
@@ -438,31 +438,33 @@ Clarinet.test({
         
         let deployer = accounts.get("deployer")!;
 
-        let call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update",
+        let call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update-extra",
             [
                 types.int(50000),
                 types.int(0),
                 types.int(2),
                 types.int(0)
             ], deployer.address);
-        assertEquals(call.result, "{result: {a: 2500000000000000000000000000000000000, exp: -32}}")
+        assertEquals(call.result, "{result: {a: 250000000000000000000, exp: -16}}")
 
-        call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update",
+        call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update-extra",
             [
                 types.int(50000),
                 types.int(0),
                 types.int(7896296018268069),
                 types.int(-2)
             ], deployer.address);
-        assertEquals(call.result, "{result: {a: 633208277454708827542, exp: -30}}")
+        console.log('result error ', call.result);
+       assertEquals(call.result, "{result: {a: 633208277454708827542, exp: -30}}")
 
-        call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update",
+        call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update-extra",
             [
                 types.int(ONE_16),
                 types.int(0),
                 types.int(2718281828459045),
                 types.int(-15)
             ], deployer.address);
-        assertEquals(call.result, "{result: {a: 367879441171442353448074937747561, exp: -17}}")
+            console.log('result error 2 ', call.result);
+        assertEquals(call.result, "{result: {a: 36787944117144235, exp: -1}}")
     }
 })
