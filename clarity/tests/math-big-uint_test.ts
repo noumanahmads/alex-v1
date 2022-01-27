@@ -2,7 +2,8 @@
 import { Clarinet, Tx, Chain, Account, types } from 'https://deno.land/x/clarinet@v0.14.0/index.ts';
 import { assertEquals } from 'https://deno.land/std@0.90.0/testing/asserts.ts';
 
-const ONE_16 = 10000000000000000
+const ONE_16 = 10000000000000000;
+const ONE_8 = 100000000;
 
 Clarinet.test({
     name: "math-big-uint: greater than equal to",
@@ -30,25 +31,30 @@ Clarinet.test({
 
         call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update-extra", 
         [
-            types.int(126641655490941765),
-            types.int(-30),
-            types.int(8886110520507872),
-            types.int(-9)
+            // types.int(126641655490941765),
+            // types.int(-30),
+            // types.int(8886110520507872),
+            // types.int(-9)
+            // types.int(500000000000000),
+            types.int(5),
+            types.int(14),
+            types.int(7896296018268069),
+            types.int(-2)
         ], deployer.address
         );
 
         console.log('Nouman ', call.result);
 
-        call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update-extra", 
-        [
-            types.int(1),
-            types.int(-30),
-            types.int(8886110520507872),
-            types.int(-9)
-        ], deployer.address
-        );
+        // call = chain.callReadOnlyFn("math-log-exp-biguint", "div-update-extra", 
+        // [
+        //     types.int(1),
+        //     types.int(-30),
+        //     types.int(8886110520507872),
+        //     types.int(-9)
+        // ], deployer.address
+        // );
 
-        console.log('Nouman ', call.result);
+        // // console.log('Nouman ', call.result);
        
     },
 });
@@ -56,18 +62,20 @@ Clarinet.test({
 Clarinet.test({
     name: "math-big-uint: ln-priv-16",
     async fn(chain: Chain, accounts: Map<string, Account>) {
-        
+        //  '50000000000'
         let deployer = accounts.get("deployer")!;
         let call = chain.callReadOnlyFn("math-log-exp-biguint", "ln-priv-16",
             [
-            '50000000000',
+        //    types.int(10),
+              '500000000000000',
             types.int(0),
         ], deployer.address);
         console.log('Result 16', call.result);
 
         call = chain.callReadOnlyFn("math-log-exp", "ln-priv-extra", 
         [
-            '5000000000000000000',
+            // types.int(10 * ONE_8),
+              '50000000000000000000000'
             ], deployer.address);
         console.log('Result 8 ', call.result);
     },

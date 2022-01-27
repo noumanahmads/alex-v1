@@ -71,7 +71,7 @@
       (seriesSum (get seriesSum num_sum_zsq))
       (r (+ out_sum (* seriesSum 2)))
    )
-    (ok r)
+    (ok a_sum)
  )
 )
 

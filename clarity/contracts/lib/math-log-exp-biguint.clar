@@ -44,7 +44,7 @@
 {x_pre: 2500000000000000, a_pre: 12840254166877415, a_exp: -16} ;; x7 = 2^-2, a7 = e^(x7)
 {x_pre: 1250000000000000, a_pre: 11331484530668263, a_exp: -16} ;; x8 = 2^-3, a8 = e^(x8)
 {x_pre: 625000000000000, a_pre: 10644944589178594, a_exp: -16} ;; x9 = 2^-4, a9 = e^(x9)
-{x_pre: 312500000000000, a_pre: 10317434074991027, a_exp: -16} ;; x10 = 2^-5, a10 = e^(x10)
+;; {x_pre: 312500000000000, a_pre: 10317434074991027, a_exp: -16} ;; x10 = 2^-5, a10 = e^(x10)
 ))
 
 ;; 2^5+2^4+2^3+2^2+2^1+2^0+2^(-1)+2^(-2)+2^(-3)+2^(-4)+2^(-5) = 63.96875
@@ -63,7 +63,7 @@
 {x_pre: 25, x_pre_exp: -2, a_pre: 1284025416687741, a_pre_exp: -15} ;; x7 = 2^-2, a7 = e^(x7)
 {x_pre: 125, x_pre_exp: -3, a_pre: 1133148453066826, a_pre_exp: -15} ;; x8 = 2^-3, a8 = e^(x8)
 {x_pre: 625, x_pre_exp: -4, a_pre: 1064494458917859, a_pre_exp: -15} ;; x9 = 2^-4, a9 = e^(x9)
-{x_pre: 3125, x_pre_exp: -5, a_pre: 1031743407499103, a_pre_exp: -15} ;; x10 = 2^-5, a10 = e^(x10)
+;; {x_pre: 3125, x_pre_exp: -5, a_pre: 1031743407499103, a_pre_exp: -15} ;; x10 = 2^-5, a10 = e^(x10)
 ))
 
 (define-constant ERR-X-OUT-OF-BOUNDS (err u5009))
@@ -134,8 +134,8 @@
             ;; (r (+ out_sum (* seriesSum 2)))
         )
         ;; (ok {series_sum: seriesSumDouble, r: r})
-        (ok r)
-        ;; (ok a_sum)
+        ;; (ok r)
+        (ok a_sum)
     )
 )
 
@@ -342,32 +342,33 @@
 
 (define-read-only (div-update-extra (a int) (a-exp int) (b int) (b-exp int))
     (let
-        (
+        (  
+            ;; 500000000000000 * 1e16 -> 5e30
+            ;; 5e30 / 7896296018268069 -> 633,208,277,454,709
             (division (/ (scale-up a) b)) ;; scale-up to get the decimal part precision ;; 14
             ;; .2516408274
             
-            (division-exponent (- (+ a-exp -16) b-exp)) ;; scale down from the exponent part
-
-
-                  
+            ;; (0 -16) - (-2) -> -14
+            ;; (0 +2) - 16 -> -14
+            (division-exponent (+ (- a-exp b-exp) -16)) ;; scale down from the exponent part
             (factor (- (scale-up a) (* division b)))
             ;; (remainder-exponent (get exp (subtraction-with-scientific-notation (scale-up a) (+ a-exp -16) factor factor-exponent)))
 
-            (remainder (/ (scale-up factor) b))
+            (remainder (/ (* (pow 10 8) factor) b))
             ;; (rem-exponent (- (+ remainder-exponent -16) b-exp))
             
-            (remainder-exponent (+ division-exponent -16))
+            (remainder-exponent (+ division-exponent -8))
 
             (result (addition-with-scientific-notation division division-exponent remainder remainder-exponent))
-            ;; (a-update (/ (get a result) ONE_16))
-            ;; (exp (get exp result))
+            (a-update (/ (get a result) ONE_8))
+            (exp (get exp result))
 
         )
-        ;; {result: {a: a-update, exp: (+ exp 16)}}
-        (if (greater-than-equal-to a a-exp b b-exp)
-            {result: {a: division, exp: division-exponent}}
-            {result: result}
-        )
+        {result: {a: a-update, exp: (+ exp 8)}}
+        ;; (if (greater-than-equal-to a a-exp b b-exp)
+        ;;     {result: {a: division, exp: division-exponent}}
+        ;;     {result: result}
+        ;; )
         ;; {result: result}
     )
 )
