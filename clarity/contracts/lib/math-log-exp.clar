@@ -71,7 +71,7 @@
       (seriesSum (get seriesSum num_sum_zsq))
       (r (+ out_sum (* seriesSum 2)))
    )
-    (ok a_sum)
+   (ok {r: r, z: z, a_sum: a_sum, z_squared: z_squared, seriesSum: seriesSum})
  )
 )
 
@@ -94,6 +94,10 @@
     (ok r)
  )
 )
+
+;; input 5e14
+;; for e^(2^5) = {a_pre: 78962960182680695161}
+;; a_pre = 78962960182680695161, x_pre = 3200000000 , use_deci= true, rolling_a= 5e14 , rolling_sum = 0
 
 (define-private (accumulate_division (x_a_pre (tuple (x_pre int) (a_pre int) (use_deci bool))) (rolling_a_sum (tuple (a int) (sum int))))
   (let

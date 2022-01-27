@@ -44,7 +44,7 @@
 {x_pre: 2500000000000000, a_pre: 12840254166877415, a_exp: -16} ;; x7 = 2^-2, a7 = e^(x7)
 {x_pre: 1250000000000000, a_pre: 11331484530668263, a_exp: -16} ;; x8 = 2^-3, a8 = e^(x8)
 {x_pre: 625000000000000, a_pre: 10644944589178594, a_exp: -16} ;; x9 = 2^-4, a9 = e^(x9)
-;; {x_pre: 312500000000000, a_pre: 10317434074991027, a_exp: -16} ;; x10 = 2^-5, a10 = e^(x10)
+{x_pre: 312500000000000, a_pre: 10317434074991027, a_exp: -16} ;; x10 = 2^-5, a10 = e^(x10)
 ))
 
 ;; 2^5+2^4+2^3+2^2+2^1+2^0+2^(-1)+2^(-2)+2^(-3)+2^(-4)+2^(-5) = 63.96875
@@ -63,7 +63,7 @@
 {x_pre: 25, x_pre_exp: -2, a_pre: 1284025416687741, a_pre_exp: -15} ;; x7 = 2^-2, a7 = e^(x7)
 {x_pre: 125, x_pre_exp: -3, a_pre: 1133148453066826, a_pre_exp: -15} ;; x8 = 2^-3, a8 = e^(x8)
 {x_pre: 625, x_pre_exp: -4, a_pre: 1064494458917859, a_pre_exp: -15} ;; x9 = 2^-4, a9 = e^(x9)
-;; {x_pre: 3125, x_pre_exp: -5, a_pre: 1031743407499103, a_pre_exp: -15} ;; x10 = 2^-5, a10 = e^(x10)
+;; ;; {x_pre: 3125, x_pre_exp: -5, a_pre: 1031743407499103, a_pre_exp: -15} ;; x10 = 2^-5, a10 = e^(x10)
 ))
 
 (define-constant ERR-X-OUT-OF-BOUNDS (err u5009))
@@ -122,21 +122,39 @@
             (out-a-sn-sub (subtraction-with-scientific-notation (get a out_a) (get exp out_a) 1 0))
             (out-a-sn-add (addition-with-scientific-notation (get a out_a) (get exp out_a) 1 0))
             ;; (scaled-out-a (scale-up-with-scientific-notation out-a-sn-sub))
-            (z (division-with-scientific-notation (get a out-a-sn-sub) (get exp out-a-sn-sub) (get a out-a-sn-add) (get exp out-a-sn-add)))
-            (z_squared (multiplication-with-scientific-notation (get a z) (get exp z) (get a z) (get exp z)))
-            (z_squared_scaled_down (scale-down-with-lost-precision z_squared))
+            ;; (z (division-with-scientific-notation (get a out-a-sn-sub) (get exp out-a-sn-sub) (get a out-a-sn-add) (get exp out-a-sn-add)))
+            (z {a: 106671418721174, exp: -16})
+            (z-squared {a: 1137879157198, exp: -16})
+            ;; (z (get result (div-update-extra-minahil (get a out-a-sn-sub) (get exp out-a-sn-sub) (get a out-a-sn-add) (get exp out-a-sn-add))))
+            ;; (z-squared (calculate_z_squared (get a z) (get exp z)))
+            ;; (z_squared (multiplication-with-scientific-notation (get a z) (get exp z) (get a z) (get exp z)))
+            ;; (z_squared_scaled_down (scale-down-with-lost-precision z_squared))
             (div_list (list 3 5 7 9 11))
-            (num_sum_zsq (fold rolling_sum_div_16 div_list {num: z, seriesSum: z, z_squared: z_squared_scaled_down}))
-            ;; (seriesSum (get seriesSum num_sum_zsq))
+            (num_sum_zsq (fold rolling_sum_div_16 div_list {num: (scale-down-with-lost-precision z), seriesSum: (scale-down-with-lost-precision z), z_squared: (scale-down-with-lost-precision z-squared)}))
+            ;; ;; (seriesSum (get seriesSum num_sum_zsq))
             (seriesSum (get seriesSum num_sum_zsq))
             (seriesSumDouble (multiplication-with-scientific-notation (get a seriesSum) (get exp seriesSum) 2 0))
             (r (addition-with-scientific-notation (get a out_sum) (get exp out_sum) (get a seriesSumDouble) (get exp seriesSumDouble)))
             ;; (r (+ out_sum (* seriesSum 2)))
         )
         ;; (ok {series_sum: seriesSumDouble, r: r})
-        ;; (ok r)
-        (ok a_sum)
+        (ok {
+            r: r, 
+            z: z, 
+            z_squared: z-squared,
+            a_sum: a_sum, 
+            seriesSum: seriesSum
+            }
+        )
+        ;; (ok a_sum)
     )
+)
+
+(define-read-only (calculate_z_squared (x int) (exp int))
+    {
+        a: (* (scale-down x) (scale-down x)), 
+        exp: (* (- exp -16) 2)
+    }
 )
 
 (define-private (rolling_sum_div_16 (n int) (rolling (tuple (num (tuple (a int) (exp int))) (seriesSum (tuple (a int) (exp int))) (z_squared (tuple (a int) (exp int))))))
@@ -186,7 +204,7 @@
     (if (greater-than-equal-to rolling_a_a rolling_a_exp a_pre a_pre_exp)
     ;; (if true
         {
-            a: (get result (div-update-extra rolling_a_a rolling_a_exp a_pre a_pre_exp)),
+            a: (get result (div-update-extra-minahil rolling_a_a rolling_a_exp a_pre a_pre_exp)),
             sum: (addition-with-scientific-notation rolling_sum_a rolling_sum_exp x_pre x_pre_exp) 
         } ;; rolling_a is scaled up so that precision is not lost when dividing by a_pre
         {a: rolling_a, sum: rolling_sum}
@@ -339,7 +357,13 @@
 )
 
 
-
+;; 7389056098930650, a_pre_exp: -15
+;; division = 10e16 / 7389056098930650 = 13.5335283237 ~ 13
+;; division-exponent = (0 -(-15)) - 16 = -1
+;; factor = 10e16 / (13/ 7389056098930650) = 5.683889307E31 ~ 56838893068697307692307692307692
+;; remainder = (10e8 * 56838893068697307692307692307692) / 7389056098930650 = 76923076923076923076923076 ~ 7.6923076923076923076923076
+;; remainder-exponent = -1 -8 = -9
+;; result = 
 (define-read-only (div-update-extra (a int) (a-exp int) (b int) (b-exp int))
     (let
         (  
@@ -364,7 +388,15 @@
             (exp (get exp result))
 
         )
-        {result: {a: a-update, exp: (+ exp 8)}}
+        {
+            division: division, 
+            division-exponent: division-exponent,
+            factor: factor,
+            remainder: remainder,
+            remainder-exponent: remainder-exponent,
+            result: result, 
+            ;; result: {a: a-update, exp: (+ exp 8)}
+        }
         ;; (if (greater-than-equal-to a a-exp b b-exp)
         ;;     {result: {a: division, exp: division-exponent}}
         ;;     {result: result}
@@ -372,6 +404,51 @@
         ;; {result: result}
     )
 )
+
+
+(define-read-only (div-update-extra-minahil (a int) (a-exp int) (b int) (b-exp int))
+    (let
+        (  
+            ;; 500000000000000 * 1e16 -> 5e30
+            ;; 5e30 / 7896296018268069 -> 633,208,277,454,709
+            (new-a (if (> a b) a (scale-up a)))
+            (division (/ new-a b)) ;; scale-up to get the decimal part precision ;; 14
+            ;; .2516408274
+            
+            ;; (0 -16) - (-2) -> -14
+            ;; (0 +2) - 16 -> -14
+            (exponent (if (> a b) 0 -16))
+            (division-exponent (+ (- a-exp b-exp) exponent)) ;; scale down from the exponent part
+            (factor (- new-a (* division b)))
+            ;; ;; (remainder-exponent (get exp (subtraction-with-scientific-notation (scale-up a) (+ a-exp -16) factor factor-exponent)))
+
+            (remainder (/ (* (pow 10 8) factor) b))
+            ;; ;; (rem-exponent (- (+ remainder-exponent -16) b-exp))
+            
+            (remainder-exponent (+ division-exponent -8))
+
+            (result (addition-with-scientific-notation division division-exponent remainder remainder-exponent))
+            ;; (a-update (/ (get a result) ONE_8))
+            ;; (exp (get exp result))
+
+        )
+        {
+            division: division, 
+            division-exponent: division-exponent,
+            factor: factor,
+            remainder: remainder,
+            remainder-exponent: remainder-exponent,
+            result: result, 
+            ;; result: {a: a-update, exp: (+ exp 8)}
+        }
+        ;; (if (greater-than-equal-to a a-exp b b-exp)
+        ;;     {result: {a: division, exp: division-exponent}}
+        ;;     {result: result}
+        ;; )
+        ;; {result: result}
+    )
+)
+
 
 ;; {division: 63320, division-exponent: -14, finalfinal-answer: {a: 633208277454708827542, exp: -30}, remainder: 8277454708827542, remainder-exponent: -30}
 ;; 0.000000000633208277454708827542
