@@ -763,35 +763,6 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "math-big-uint: transform-generalized",
-    async fn(chain: Chain, accounts: Map<string, Account>) {
-        let deployer = accounts.get("deployer")!;
-        let call = chain.callReadOnlyFn("math-log-exp-biguint", "transform-generalized",
-            [
-                types.int(111149361063549),
-                types.int(-8),
-                types.int(-13)
-            ], deployer.address
-        );
-        let result: any = call.result.expectTuple();
-        result['a'].expectInt(11114936106354900000);
-        result['exp'].expectInt(-13);
-
-        call = chain.callReadOnlyFn("math-log-exp-biguint", "transform-generalized",
-            [
-                '829487965402890273820142',
-                types.int(-5),
-                types.int(-5),
-            ], deployer.address
-        );
-        result = call.result.expectTuple();
-        assertEquals(result['a'], '829487965402890273820142');
-        result['exp'].expectInt(-5);
-
-    },
-});
-
-Clarinet.test({
     name: "math-big-uint: transform-to-16",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get("deployer")!;
